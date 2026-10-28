@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.1",
+  "profile_id": "profile-lab-01",
+  "operator_id": "operator-lab-01",
+  "display_name": "Operario ficticio de laboratorio",
+  "revision": 3,
+  "cell_id": "cell-lab-01",
+  "presentation_pose": {
+    "frame_id": "ur3_base",
+    "position_m": [
+      0.35,
+      0.1,
+      0.4
+    ],
+    "orientation_xyzw": [
+      1,
+      0,
+      0,
+      0
+    ]
+  },
+  "table_height_m": 0.95,
+  "stature_m": 1.75,
+  "table_height_mode": "manual",
+  "table_height_rule": null,
+  "table_height_reference": "tabletop_above_floor",
+  "apply_policy": "next_safe_state",
+  "updated_at": "2026-10-16T08:30:00.000Z"
+}

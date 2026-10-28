@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "message_id": "lab-message-0004",
+  "source_id": "control-pc-lab-01",
+  "boot_id": "lab-boot-001",
+  "sequence": 4,
+  "cell_id": "cell-lab-01",
+  "session_id": "session-lab-001",
+  "operator_id": "operator-lab-01",
+  "study_id": "study-lab-001",
+  "emitted_at": "2026-10-16T09:00:00.150Z",
+  "clock_sync": "synchronized",
+  "message_type": "event",
+  "observed_at": "2026-10-16T09:00:00.100Z",
+  "cycle_id": "cycle-lab-001",
+  "event_type": "cycle_completed",
+  "origin": "hmi",
+  "reason": null,
+  "data": {
+    "outcome": "finished_uninspected",
+    "product_id": "part-lab-001"
+  }
+}

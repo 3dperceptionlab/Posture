@@ -1,0 +1,10 @@
+{
+    auto_https disable_redirects
+    skip_install_trust
+    default_sni {$POSTURE_TLS_HOST:172.19.33.30}
+}
+
+{$POSTURE_TLS_HOST:172.19.33.30}, {$POSTURE_TLS_EXTRA_HOST:100.82.238.105}, localhost {
+    tls internal
+    reverse_proxy api:8080
+}

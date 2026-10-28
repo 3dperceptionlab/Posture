@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+source scripts/docker_common.sh
+recover() {
+  docker_cmd compose start crate
+  docker_cmd compose exec -T api python -m tests.recovery cleanup
+}
+trap recover EXIT
+docker_cmd compose exec -T api python -m tests.recovery prepare
+docker_cmd compose stop crate
+docker_cmd compose exec -T api python -m tests.recovery send
+docker_cmd compose start crate
+docker_cmd compose exec -T api python -m tests.recovery verify

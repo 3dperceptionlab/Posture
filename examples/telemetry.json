@@ -1,0 +1,377 @@
+{
+  "schema_version": "0.1",
+  "message_id": "lab-message-0001",
+  "source_id": "control-pc-lab-01",
+  "boot_id": "lab-boot-001",
+  "sequence": 1,
+  "cell_id": "cell-lab-01",
+  "session_id": "session-lab-001",
+  "operator_id": "operator-lab-01",
+  "study_id": "study-lab-001",
+  "emitted_at": "2026-10-16T09:00:00.150Z",
+  "clock_sync": "synchronized",
+  "message_type": "telemetry",
+  "pose": {
+    "observed_at": "2026-10-16T09:00:00.100Z",
+    "frame_id": "camera-lab-01:lab-boot-001:250",
+    "camera_id": "camera-lab-01",
+    "tracking_id": "track-001",
+    "cycle_id": "cycle-lab-001",
+    "joint_schema": "posture.body33.v1",
+    "estimator": {
+      "name": "synthetic_fixture",
+      "version": "0.1"
+    },
+    "image": {
+      "width_px": 1920,
+      "height_px": 1080,
+      "mirrored": false
+    },
+    "calibration_id": null,
+    "space_3d": null,
+    "joints": {
+      "nose": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          960,
+          130
+        ],
+        "point_3d_m": null
+      },
+      "left_eye_inner": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          949,
+          120
+        ],
+        "point_3d_m": null
+      },
+      "left_eye": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          941,
+          119
+        ],
+        "point_3d_m": null
+      },
+      "left_eye_outer": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          933,
+          120
+        ],
+        "point_3d_m": null
+      },
+      "right_eye_inner": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          971,
+          120
+        ],
+        "point_3d_m": null
+      },
+      "right_eye": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          979,
+          119
+        ],
+        "point_3d_m": null
+      },
+      "right_eye_outer": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          987,
+          120
+        ],
+        "point_3d_m": null
+      },
+      "left_ear": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          917,
+          133
+        ],
+        "point_3d_m": null
+      },
+      "right_ear": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1003,
+          133
+        ],
+        "point_3d_m": null
+      },
+      "mouth_left": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          947,
+          150
+        ],
+        "point_3d_m": null
+      },
+      "mouth_right": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          973,
+          150
+        ],
+        "point_3d_m": null
+      },
+      "left_shoulder": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          820,
+          260
+        ],
+        "point_3d_m": null
+      },
+      "right_shoulder": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1100,
+          260
+        ],
+        "point_3d_m": null
+      },
+      "left_elbow": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          760,
+          430
+        ],
+        "point_3d_m": null
+      },
+      "right_elbow": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1160,
+          430
+        ],
+        "point_3d_m": null
+      },
+      "left_wrist": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          820,
+          580
+        ],
+        "point_3d_m": null
+      },
+      "right_wrist": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1100,
+          580
+        ],
+        "point_3d_m": null
+      },
+      "left_pinky": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          808,
+          608
+        ],
+        "point_3d_m": null
+      },
+      "right_pinky": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1112,
+          608
+        ],
+        "point_3d_m": null
+      },
+      "left_index": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          828,
+          610
+        ],
+        "point_3d_m": null
+      },
+      "right_index": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1092,
+          610
+        ],
+        "point_3d_m": null
+      },
+      "left_thumb": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          842,
+          590
+        ],
+        "point_3d_m": null
+      },
+      "right_thumb": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1078,
+          590
+        ],
+        "point_3d_m": null
+      },
+      "left_hip": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          870,
+          660
+        ],
+        "point_3d_m": null
+      },
+      "right_hip": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1050,
+          660
+        ],
+        "point_3d_m": null
+      },
+      "left_knee": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          860,
+          1020
+        ],
+        "point_3d_m": null
+      },
+      "right_knee": {
+        "status": "detected",
+        "confidence": 0.88,
+        "image_xy_px": [
+          1060,
+          1020
+        ],
+        "point_3d_m": null
+      },
+      "left_ankle": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      },
+      "right_ankle": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      },
+      "left_heel": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      },
+      "right_heel": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      },
+      "left_foot_index": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      },
+      "right_foot_index": {
+        "status": "missing",
+        "confidence": null,
+        "image_xy_px": null,
+        "point_3d_m": null
+      }
+    }
+  },
+  "robot": {
+    "observed_at": "2026-10-16T09:00:00.095Z",
+    "cycle_id": "cycle-lab-002",
+    "model": "UR3",
+    "joint_names": [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint"
+    ],
+    "joint_positions_rad": [
+      0,
+      -1.57,
+      1.2,
+      -1.2,
+      -1.57,
+      0
+    ],
+    "tcp_pose": {
+      "frame_id": "ur3_base",
+      "position_m": [
+        0.35,
+        0.1,
+        0.4
+      ],
+      "orientation_xyzw": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    "robot_mode": "moving",
+    "safety_status": "unknown",
+    "applied_profile_revision": 3,
+    "suction": {
+      "commanded_active": true,
+      "feedback_available": false,
+      "measured_active": null,
+      "last_command_id": "command-lab-001",
+      "last_command_source": "voice",
+      "last_command_at": "2026-10-16T08:59:59.000Z"
+    }
+  },
+  "table": {
+    "observed_at": "2026-10-16T09:00:00.090Z",
+    "height_m": 0.95,
+    "height_reference": "tabletop_above_floor",
+    "state": "idle",
+    "applied_profile_revision": 3
+  },
+  "frame": {
+    "frame_id": "camera-lab-01:lab-boot-001:250",
+    "camera_id": "camera-lab-01",
+    "captured_at": "2026-10-16T09:00:00.100Z",
+    "width_px": 1920,
+    "height_px": 1080,
+    "capture_fps": 25,
+    "retention_mode": "study",
+    "content_type": "image/jpeg"
+  }
+}

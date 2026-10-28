@@ -1,0 +1,46 @@
+{
+  "ended_at": "2026-10-26T08:00:15Z",
+  "status": "completed",
+  "completion_reason": "quality_check",
+  "actions": [
+    {
+      "event_id": "voice-qc-001",
+      "observed_at": "2026-10-26T08:00:15Z",
+      "type": "quality_check",
+      "message": "Operario solicita siguiente pieza",
+      "data": {
+        "input": "voice"
+      }
+    }
+  ],
+  "final_tool": {
+    "observed_at": "2026-10-26T08:00:14Z",
+    "position": [
+      0.35,
+      0.1,
+      0.4
+    ],
+    "rotation_xyz": [
+      0,
+      0,
+      0
+    ],
+    "space": {
+      "kind": "world_metric",
+      "frame_id": "ur3_base",
+      "unit": "m",
+      "axes": "ros",
+      "rotation_unit": "rad",
+      "rotation_convention": "extrinsic_xyz"
+    },
+    "suction_commanded": false
+  },
+  "final_table": {
+    "observed_at": "2026-10-26T08:00:14Z",
+    "height_m": 1.05,
+    "measurement": "measured"
+  },
+  "metadata": {
+    "synthetic": true
+  }
+}

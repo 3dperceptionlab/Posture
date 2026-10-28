@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:posture:operator-profile:0.1",
+  "title": "POSTURE operator profile — proposed v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "operator_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cell_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "presentation_pose": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frame_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "position_m": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "orientation_xyzw": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "frame_id",
+        "position_m",
+        "orientation_xyzw"
+      ]
+    },
+    "stature_m": {
+      "type": ["number", "null"],
+      "minimum": 1.0,
+      "maximum": 2.3
+    },
+    "table_height_mode": {
+      "enum": ["automatic", "manual"]
+    },
+    "table_height_rule": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "table_height_m": {
+      "type": "number",
+      "minimum": 0.2,
+      "maximum": 2
+    },
+    "table_height_reference": {
+      "const": "tabletop_above_floor"
+    },
+    "apply_policy": {
+      "const": "next_safe_state"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "profile_id",
+    "operator_id",
+    "display_name",
+    "revision",
+    "cell_id",
+    "presentation_pose",
+    "table_height_m",
+    "table_height_reference",
+    "apply_policy",
+    "updated_at"
+  ]
+}

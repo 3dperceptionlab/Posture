@@ -1,0 +1,6 @@
+# GPU inference is isolated from the API image. rtmlib is installed separately
+# without its desktop OpenCV / CPU ONNX dependencies (see Dockerfile.vision).
+onnxruntime-gpu[cuda,cudnn]==1.23.2
+numpy==2.2.6
+opencv-python-headless==4.12.0.88
+tqdm==4.67.1

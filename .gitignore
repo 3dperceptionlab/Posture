@@ -1,29 +1,9 @@
-# ROS 2 / colcon
-build/
-install/
-log/
-
-# Python
+.env
+.runtime/
+backups/
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-eggs/
-
-# IDE / editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Misc
-*.bak
-*~
+*.pyc
+.pytest_cache/
+data/
+examples/videos/*
+!examples/videos/.gitkeep

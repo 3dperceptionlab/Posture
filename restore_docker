@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+source scripts/docker_common.sh
+umask 077
+if [[ $# != 2 || "$2" != --replace ]]; then
+  printf 'Uso: ./restore_docker /ruta/copia --replace\nRestaura los volúmenes del proyecto POSTURE; --replace indica sustitución de los datos existentes.\n'
+  exit 2
+fi
+posture_backup=$(cd -- "$1" && pwd)
+posture_project=${POSTURE_PROJECT:-posture}
+if [[ ! "$posture_project" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then exit 2; fi
+export POSTURE_VISION_DIR
+POSTURE_VISION_DIR=$(vision_directory)
+(cd "$posture_backup" && sha256sum -c SHA256SUMS)
+cp "$posture_backup/config.env" .env
+chmod 600 .env
+posture_env="$PWD/.env"
+if [[ -n "${POSTURE_PORT:-}" ]]; then
+  if [[ ! "$POSTURE_PORT" =~ ^[0-9]+$ ]] || (( POSTURE_PORT < 1 || POSTURE_PORT > 65535 )); then exit 2; fi
+  mkdir -p .runtime
+  posture_env="$PWD/.runtime/restore-$posture_project.env"
+  sed "s/^POSTURE_PORT=.*/POSTURE_PORT=$POSTURE_PORT/" .env > "$posture_env"
+  chmod 600 "$posture_env"
+fi
+docker_cmd compose --env-file "$posture_env" -p "$posture_project" down
+for posture_volume in mongo crate media caddy_data caddy_config; do
+  if [[ ! -f "$posture_backup/$posture_volume.tar.gz" ]]; then continue; fi
+  docker_cmd volume create "${posture_project}_${posture_volume}" > /dev/null
+  docker_cmd run --rm -i --mount "type=volume,src=${posture_project}_${posture_volume},dst=/volume" alpine:3.21 sh -c 'find /volume -mindepth 1 -maxdepth 1 -exec rm -rf {} + && tar -C /volume -xzf -' < "$posture_backup/$posture_volume.tar.gz"
+done
+mkdir -p "$POSTURE_VISION_DIR" examples/videos
+if [[ -f "$posture_backup/vision.tar.gz" ]]; then
+  docker_cmd run --rm -i --mount "type=bind,src=$POSTURE_VISION_DIR,dst=/vision" alpine:3.21 sh -c 'find /vision -mindepth 1 -maxdepth 1 -exec rm -rf {} + && tar -C /vision -xzf -' < "$posture_backup/vision.tar.gz"
+fi
+docker_cmd run --rm --mount "type=bind,src=$POSTURE_VISION_DIR,dst=/vision" alpine:3.21 sh -c "chown $(id -u):10001 /vision && chmod 2775 /vision"
+docker_cmd compose --env-file "$posture_env" -p "$posture_project" up -d --build
+printf '\nRestauración completada para %s.\n' "$posture_project"

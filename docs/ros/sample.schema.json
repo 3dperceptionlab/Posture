@@ -1,0 +1,430 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Joint": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "detected",
+          "enum": [
+            "detected",
+            "estimated",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Position"
+        },
+        "rotation_xyz": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rotation Xyz"
+        },
+        "image_xy_px": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Xy Px"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        }
+      },
+      "title": "Joint",
+      "type": "object"
+    },
+    "Pose": {
+      "additionalProperties": false,
+      "properties": {
+        "joint_schema": {
+          "const": "posture.body33.v1",
+          "default": "posture.body33.v1",
+          "title": "Joint Schema",
+          "type": "string"
+        },
+        "estimator_name": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Estimator Name",
+          "type": "string"
+        },
+        "estimator_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Estimator Version",
+          "type": "string"
+        },
+        "space": {
+          "$ref": "#/$defs/Space"
+        },
+        "joints": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Joint"
+          },
+          "title": "Joints",
+          "type": "object"
+        }
+      },
+      "required": [
+        "estimator_name",
+        "estimator_version",
+        "space",
+        "joints"
+      ],
+      "title": "Pose",
+      "type": "object"
+    },
+    "Space": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "unknown",
+            "model_relative",
+            "camera_metric",
+            "world_metric"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "frame_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "m",
+            "mm",
+            "unknown"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "axes": {
+          "enum": [
+            "optical",
+            "ros",
+            "unknown"
+          ],
+          "title": "Axes",
+          "type": "string"
+        },
+        "rotation_unit": {
+          "enum": [
+            "rad",
+            "deg",
+            "unknown"
+          ],
+          "title": "Rotation Unit",
+          "type": "string"
+        },
+        "rotation_convention": {
+          "enum": [
+            "extrinsic_xyz",
+            "unknown"
+          ],
+          "title": "Rotation Convention",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "frame_id",
+        "unit",
+        "axes",
+        "rotation_unit",
+        "rotation_convention"
+      ],
+      "title": "Space",
+      "type": "object"
+    },
+    "TableState": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "height_m": {
+          "anyOf": [
+            {
+              "maximum": 3,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Height M"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Position"
+        },
+        "rotation_xyz": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 3,
+              "minItems": 3,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rotation Xyz"
+        },
+        "space": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Space"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "measurement": {
+          "default": "unknown",
+          "enum": [
+            "measured",
+            "commanded",
+            "unknown"
+          ],
+          "title": "Measurement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "observed_at"
+      ],
+      "title": "TableState",
+      "type": "object"
+    },
+    "ToolPose": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "position": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Position",
+          "type": "array"
+        },
+        "rotation_xyz": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "title": "Rotation Xyz",
+          "type": "array"
+        },
+        "space": {
+          "$ref": "#/$defs/Space"
+        },
+        "suction_commanded": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suction Commanded"
+        }
+      },
+      "required": [
+        "observed_at",
+        "position",
+        "rotation_xyz",
+        "space"
+      ],
+      "title": "ToolPose",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "frame_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Frame Id",
+      "type": "string"
+    },
+    "video_time_s": {
+      "minimum": 0,
+      "title": "Video Time S",
+      "type": "number"
+    },
+    "image_width": {
+      "maximum": 8192,
+      "minimum": 1,
+      "title": "Image Width",
+      "type": "integer"
+    },
+    "image_height": {
+      "maximum": 8192,
+      "minimum": 1,
+      "title": "Image Height",
+      "type": "integer"
+    },
+    "mirrored": {
+      "default": false,
+      "title": "Mirrored",
+      "type": "boolean"
+    },
+    "source_frame_index": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Frame Index"
+    },
+    "pose": {
+      "$ref": "#/$defs/Pose"
+    },
+    "tool": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ToolPose"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "table": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TableState"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "sequence",
+    "captured_at",
+    "frame_id",
+    "video_time_s",
+    "image_width",
+    "image_height",
+    "pose"
+  ],
+  "title": "Sample",
+  "type": "object"
+}

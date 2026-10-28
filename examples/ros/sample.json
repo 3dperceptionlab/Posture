@@ -1,0 +1,472 @@
+{
+  "sequence": 0,
+  "captured_at": "2026-10-26T08:00:05Z",
+  "frame_id": "camera-main:frame-0",
+  "video_time_s": 0,
+  "image_width": 1920,
+  "image_height": 1080,
+  "pose": {
+    "estimator_name": "synthetic",
+    "estimator_version": "1",
+    "space": {
+      "kind": "unknown",
+      "frame_id": "unknown",
+      "unit": "unknown",
+      "axes": "unknown",
+      "rotation_unit": "unknown",
+      "rotation_convention": "unknown"
+    },
+    "joints": {
+      "nose": {
+        "status": "detected",
+        "position": [
+          960,
+          130,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_eye_inner": {
+        "status": "detected",
+        "position": [
+          949,
+          120,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_eye": {
+        "status": "detected",
+        "position": [
+          941,
+          119,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_eye_outer": {
+        "status": "detected",
+        "position": [
+          933,
+          120,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_eye_inner": {
+        "status": "detected",
+        "position": [
+          971,
+          120,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_eye": {
+        "status": "detected",
+        "position": [
+          979,
+          119,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_eye_outer": {
+        "status": "detected",
+        "position": [
+          987,
+          120,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_ear": {
+        "status": "detected",
+        "position": [
+          917,
+          133,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_ear": {
+        "status": "detected",
+        "position": [
+          1003,
+          133,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "mouth_left": {
+        "status": "detected",
+        "position": [
+          947,
+          150,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "mouth_right": {
+        "status": "detected",
+        "position": [
+          973,
+          150,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_shoulder": {
+        "status": "detected",
+        "position": [
+          820,
+          260,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_shoulder": {
+        "status": "detected",
+        "position": [
+          1100,
+          260,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_elbow": {
+        "status": "detected",
+        "position": [
+          760,
+          430,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_elbow": {
+        "status": "detected",
+        "position": [
+          1160,
+          430,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_wrist": {
+        "status": "detected",
+        "position": [
+          820,
+          580,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_wrist": {
+        "status": "detected",
+        "position": [
+          1100,
+          580,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_pinky": {
+        "status": "detected",
+        "position": [
+          808,
+          608,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_pinky": {
+        "status": "detected",
+        "position": [
+          1112,
+          608,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_index": {
+        "status": "detected",
+        "position": [
+          828,
+          610,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_index": {
+        "status": "detected",
+        "position": [
+          1092,
+          610,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_thumb": {
+        "status": "detected",
+        "position": [
+          842,
+          590,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_thumb": {
+        "status": "detected",
+        "position": [
+          1078,
+          590,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_hip": {
+        "status": "detected",
+        "position": [
+          870,
+          660,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_hip": {
+        "status": "detected",
+        "position": [
+          1050,
+          660,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_knee": {
+        "status": "detected",
+        "position": [
+          860,
+          1020,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "right_knee": {
+        "status": "detected",
+        "position": [
+          1060,
+          1020,
+          0
+        ],
+        "rotation_xyz": [
+          0,
+          0,
+          0
+        ],
+        "confidence": 0.88,
+        "image_xy_px": null
+      },
+      "left_ankle": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      },
+      "right_ankle": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      },
+      "left_heel": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      },
+      "right_heel": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      },
+      "left_foot_index": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      },
+      "right_foot_index": {
+        "status": "missing",
+        "position": null,
+        "rotation_xyz": null,
+        "confidence": null,
+        "image_xy_px": null
+      }
+    }
+  },
+  "metadata": {
+    "synthetic": true
+  }
+}

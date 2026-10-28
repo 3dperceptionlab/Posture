@@ -1,0 +1,156 @@
+name: posture
+x-app: &app
+  image: posture-server:0.1.0
+  build: .
+  env_file: .env
+  restart: unless-stopped
+  init: true
+  environment: &app-env
+    MONGO_URL: mongodb://mongo:27017
+    CRATE_URL: http://crate:4200
+    ORION_URL: http://orion:1026
+    QUANTUMLEAP_URL: http://quantumleap:8668
+    MEDIA_ROOT: /data/media
+    VISION_ROOT: /data/vision
+    VISION_EXAMPLES: /data/examples
+    VISION_PROJECT: /data/project
+    POSTURE_TLS_HOST: ${POSTURE_TLS_HOST:-172.19.33.30}
+    POSTURE_TLS_PORT: ${POSTURE_TLS_PORT:-8443}
+  volumes:
+    - media:/data/media
+    - ${POSTURE_VISION_DIR:-./data/vision}:/data/vision
+    - ./examples:/data/examples:ro
+    - .:/data/project:ro
+  depends_on:
+    mongo:
+      condition: service_healthy
+  networks: [posture]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  api:
+    <<: *app
+    ports:
+      - "${POSTURE_BIND:-0.0.0.0}:${POSTURE_PORT:-8080}:8080"
+    mem_limit: 1g
+    cpus: 2
+  worker:
+    <<: *app
+    command: [python, -m, backend.worker]
+    healthcheck:
+      disable: true
+    mem_limit: 1g
+    cpus: 2
+  vision:
+    image: posture-vision:0.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.vision
+    env_file: .env
+    environment:
+      <<: *app-env
+      VISION_DEVICE: cuda
+      NVIDIA_VISIBLE_DEVICES: ${POSTURE_GPU_DEVICE:-0}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${POSTURE_GPU_DEVICE:-0}"]
+              capabilities: [gpu]
+    volumes:
+      - media:/data/media
+      - ${POSTURE_VISION_DIR:-./data/vision}:/data/vision
+      - ./examples:/data/examples:ro
+      - .:/data/project:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [posture]
+    restart: unless-stopped
+    init: true
+    mem_limit: 6g
+    cpus: 6
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, python, -m, backend.vision_worker, --health]
+      interval: 20s
+      timeout: 5s
+      start_period: 180s
+      retries: 3
+  https:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    environment:
+      POSTURE_TLS_HOST: ${POSTURE_TLS_HOST:-172.19.33.30}
+      POSTURE_TLS_EXTRA_HOST: ${POSTURE_TLS_EXTRA_HOST:-100.82.238.105}
+    ports:
+      - "${POSTURE_BIND:-0.0.0.0}:${POSTURE_TLS_PORT:-8443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+    networks: [posture]
+    restart: unless-stopped
+    mem_limit: 128m
+  mongo:
+    image: mongo:7.0@sha256:9650758f83af117fc96699f030a44f9300bed839734e67012f56df05b2fd6290
+    command: [mongod, --bind_ip_all, --wiredTigerCacheSizeGB, '1']
+    restart: unless-stopped
+    volumes: [mongo:/data/db]
+    networks: [posture]
+    mem_limit: 2g
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  orion:
+    image: quay.io/fiware/orion-ld:1.12.0@sha256:58de8605036c0e4405808ea0fe56b3cc1c62453711f34b80a66fbfea25c0b45a
+    command: [-dbhost, mongo, -mongocOnly, -logLevel, WARN, -disableFileLog]
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [posture]
+    mem_limit: 512m
+  crate:
+    image: crate:5.10.16@sha256:5d7cd92eb84d56d538e2222a436e432164b853fdf186aebb17c446787f23a307
+    command: [crate, -Cdiscovery.type=single-node, -Cnetwork.host=0.0.0.0, -Cauth.host_based.enabled=false, -Ccluster.name=posture]
+    environment:
+      CRATE_HEAP_SIZE: 1g
+    restart: unless-stopped
+    volumes: [crate:/data]
+    networks: [posture]
+    mem_limit: 3g
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://localhost:4200/ > /dev/null']
+      interval: 15s
+      timeout: 5s
+      retries: 15
+  quantumleap:
+    image: orchestracities/quantumleap:1.0.0@sha256:d86bae97bea13b06830039979af979b1c9b24beddbc70df7a6ab4748ff618897
+    environment:
+      CRATE_HOST: crate
+      CRATE_PORT: '4200'
+      LOGLEVEL: WARNING
+      CACHE_QUERIES: 'False'
+      WQ_OFFLOAD_WORK: 'False'
+      GEOCODING_ENABLED: 'False'
+    restart: unless-stopped
+    depends_on:
+      crate:
+        condition: service_healthy
+    networks: [posture]
+    mem_limit: 768m
+networks:
+  posture:
+    driver: bridge
+volumes:
+  mongo:
+  crate:
+  media:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+source scripts/docker_common.sh
+umask 077
+posture_project=${POSTURE_PROJECT:-posture}
+posture_vision_path=$(vision_directory)
+posture_stamp=$(date -u +%Y%m%dT%H%M%SZ)
+posture_backup="$PWD/backups/$posture_stamp"
+mkdir -p backups
+mkdir "$posture_backup"
+mapfile -t posture_running < <(docker_cmd compose -p "$posture_project" ps --status running --services)
+resume_services() {
+  if (( ${#posture_running[@]} )); then docker_cmd compose -p "$posture_project" start "${posture_running[@]}"; fi
+}
+trap resume_services EXIT
+if (( ${#posture_running[@]} )); then docker_cmd compose -p "$posture_project" stop "${posture_running[@]}"; fi
+for posture_volume in mongo crate media caddy_data caddy_config; do
+  docker_cmd run --rm --mount "type=volume,src=${posture_project}_${posture_volume},dst=/volume,readonly" alpine:3.21 tar -C /volume -czf - . > "$posture_backup/$posture_volume.tar.gz"
+done
+docker_cmd run --rm --mount "type=bind,src=$posture_vision_path,dst=/vision,readonly" alpine:3.21 tar -C /vision -czf - . > "$posture_backup/vision.tar.gz"
+cp .env "$posture_backup/config.env"
+tar --exclude='./backups' --exclude='./.runtime' --exclude='./.env' --exclude='./data' --exclude='./@eaDir' --exclude='./dmulero' --exclude='*.pdf' --exclude='./.git' -czf "$posture_backup/source.tar.gz" .
+printf 'POSTURE backup v2\nUTC: %s\nProject: %s\nIncludes: mongo crate media vision caddy_data caddy_config\n' "$posture_stamp" "$posture_project" > "$posture_backup/manifest.txt"
+(cd "$posture_backup" && sha256sum *.tar.gz config.env > SHA256SUMS)
+printf '\nCopia completa: %s\n' "$posture_backup"

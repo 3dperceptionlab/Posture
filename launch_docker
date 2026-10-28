@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
+source scripts/docker_common.sh
+if [[ ! -f .env ]]; then
+  umask 077
+  mkdir -p .runtime
+  admin_password=$(openssl rand -hex 20)
+  ingest_token=$(openssl rand -hex 32)
+  cat > .env <<EOF
+POSTURE_PORT=8080
+POSTURE_BIND=0.0.0.0
+POSTURE_ADMIN_USER=admin
+POSTURE_ADMIN_PASSWORD=$admin_password
+POSTURE_INGEST_TOKEN=$ingest_token
+POSTURE_AUTH_MODE=strict
+POSTURE_COOKIE_SECURE=false
+EOF
+  printf 'Usuario: admin\nContraseña: %s\nToken ROS: consultar POSTURE_INGEST_TOKEN en .env\n' "$admin_password" > .runtime/admin-credentials.txt
+  chmod 600 .env .runtime/admin-credentials.txt
+fi
+export_certificate() {
+  local posture_vision_path
+  posture_vision_path=$(vision_directory)
+  mkdir -p "$posture_vision_path" .runtime
+  docker_cmd compose exec -T https cat /data/caddy/pki/authorities/local/root.crt > .runtime/posture-root.crt
+  cp .runtime/posture-root.crt "$posture_vision_path/posture-root.crt"
+  chmod 644 .runtime/posture-root.crt "$posture_vision_path/posture-root.crt"
+  printf 'Certificado público: %s/.runtime/posture-root.crt\n' "$PWD"
+  openssl x509 -in .runtime/posture-root.crt -noout -fingerprint -sha256
+}
+case "${1:-up}" in
+  up)
+    export POSTURE_VISION_DIR
+    POSTURE_VISION_DIR=$(vision_directory)
+    mkdir -p "$POSTURE_VISION_DIR" examples/videos
+    # Shared bind mount: host owner, container group; do not change existing files.
+    docker_cmd run --rm --mount "type=bind,src=$POSTURE_VISION_DIR,dst=/vision" alpine:3.21 sh -c "chown $(id -u):10001 /vision && chmod 2775 /vision"
+    docker_cmd compose up -d --build
+    for posture_attempt in {1..15}; do
+      if export_certificate 2>/dev/null; then break; fi
+      sleep 1
+    done
+    ;;
+  certificate) export_certificate ;;
+  stop) docker_cmd compose stop ;;
+  down) docker_cmd compose down ;;
+  status) docker_cmd compose ps ;;
+  logs) docker_cmd compose logs --tail=100 -f "${2:-api}" ;;
+  test) docker_cmd compose run --rm --no-deps api python -m unittest discover -s tests -v ;;
+  *) printf 'Uso: ./launch_docker [up|stop|down|status|certificate|logs [servicio]|test]\n'; exit 2 ;;
+esac
+if [[ "${1:-up}" == up ]]; then
+  printf '\nPOSTURE: http://localhost:%s\nCredenciales: %s/.runtime/admin-credentials.txt\n' "$(sed -n 's/^POSTURE_PORT=//p' .env)" "$PWD"
+  printf 'Cámara: HTTPS en puerto %s (ver docs/CAMARA_HTTPS.md).\n' "${POSTURE_TLS_PORT:-8443}"
+fi

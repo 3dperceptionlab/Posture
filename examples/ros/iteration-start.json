@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "source_id": "ros-cell-01",
+  "cell_id": "cell-real-01",
+  "client_iteration_id": "REPLACE-STABLE-PIECE-UUID",
+  "shift_id": 1,
+  "started_at": "2026-10-26T08:00:05Z",
+  "operator": {
+    "id": 42,
+    "name": "Operario ficticio",
+    "stature_m": 1.75,
+    "profile": {
+      "profile_id": "hmi-42",
+      "table_height_m": 1.05
+    }
+  },
+  "robot_assisted": true,
+  "label": "",
+  "metadata": {
+    "synthetic": true
+  }
+}

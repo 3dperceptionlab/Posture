@@ -1,0 +1,3037 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "POSTURE · HMI / ROS · contrato 1.0",
+    "description": "Adquisición HMI/ROS por turnos e iteraciones y herramientas de laboratorio. Las operaciones de adquisición requieren Bearer ROS o cookie administradora. Recibir datos no implica calcular métricas. Contrato y ejemplos: docs/ROS_API.md.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/assessment-forms": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Consultar formularios versionados para HMI",
+        "operationId": "forms_api_v1_assessment_forms_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Registrar una versión inmutable de formulario",
+        "operationId": "add_form_api_v1_assessment_forms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormDefinition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/real/settings": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Configuración independiente del trabajo en entorno real",
+        "operationId": "settings_api_v1_real_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Configurar políticas para las siguientes iteraciones",
+        "operationId": "set_settings_api_v1_real_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/shifts": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Iniciar turno con operario HMI y formulario previo",
+        "operationId": "start_shift_api_v1_shifts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShiftStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Shifts",
+        "operationId": "shifts_api_v1_shifts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "operator_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Operator Id"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Label"
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "title": "Before Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShiftRead"
+                  },
+                  "title": "Response Shifts Api V1 Shifts Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/shifts/{shift_id}/end": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Finalizar turno con formulario posterior",
+        "operationId": "end_shift_api_v1_shifts__shift_id__end_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shift_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shift Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShiftEnd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/shifts/{shift_id}": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Shift Detail",
+        "operationId": "shift_detail_api_v1_shifts__shift_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shift_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shift Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Label Shift",
+        "operationId": "label_shift_api_v1_shifts__shift_id__patch",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shift_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shift Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Iniciar pieza cuando el UR empieza a recogerla",
+        "operationId": "start_iteration_api_v1_iterations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IterationStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IterationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Iterations",
+        "operationId": "iterations_api_v1_iterations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shift_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "title": "Shift Id"
+            }
+          },
+          {
+            "name": "operator_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Operator Id"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Label"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "title": "Before Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IterationRead"
+                  },
+                  "title": "Response Iterations Api V1 Iterations Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/summary": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Cerrar pieza por Quality Check, error o cancelación",
+        "operationId": "iteration_summary_api_v1_iterations__iteration_id__summary_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Summary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IterationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Iteration Detail",
+        "operationId": "iteration_detail_api_v1_iterations__iteration_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IterationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Label Iteration",
+        "operationId": "label_iteration_api_v1_iterations__iteration_id__patch",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/update_sample": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Guardar una pose ROS y su JPEG sin procesar por defecto",
+        "operationId": "update_sample_api_v1_iterations__iteration_id__update_sample_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_sample_api_v1_iterations__iteration_id__update_sample_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleReceipt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/real/contracts/sample": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "JSON Schema del campo metadata de update_sample",
+        "operationId": "sample_contract_api_v1_real_contracts_sample_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/samples": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Samples",
+        "operationId": "samples_api_v1_iterations__iteration_id__samples_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          },
+          {
+            "name": "after_sequence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": -1,
+              "title": "After Sequence"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SampleRead"
+                  },
+                  "title": "Response Samples Api V1 Iterations  Iteration Id  Samples Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/samples/{sequence}/image": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "JPEG original: solo administradores",
+        "operationId": "sample_image_api_v1_iterations__iteration_id__samples__sequence__image_get",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          },
+          {
+            "name": "sequence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Sequence"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/video/uploads": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Preparar subida reanudable del MP4",
+        "operationId": "start_video_api_v1_iterations__iteration_id__video_uploads_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/video": {
+      "put": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Subir bloque MP4, offset exacto; máximo 8 MiB",
+        "operationId": "video_chunk_api_v1_iterations__iteration_id__video_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "video/mp4": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Descargar MP4 original: solo administradores",
+        "operationId": "original_video_api_v1_iterations__iteration_id__video_get",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/video/complete": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Verificar tamaño y SHA-256 y cerrar el MP4",
+        "operationId": "complete_video_api_v1_iterations__iteration_id__video_complete_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/analyses": {
+      "post": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Solicitar métricas ROS y/o análisis GPU del MP4",
+        "operationId": "analyze_api_v1_iterations__iteration_id__analyses_post",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisRead"
+                  },
+                  "title": "Response Analyze Api V1 Iterations  Iteration Id  Analyses Post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    },
+    "/api/v1/iterations/{iteration_id}/analyses/{analysis_id}/results": {
+      "get": {
+        "tags": [
+          "Trabajo en entorno real"
+        ],
+        "summary": "Analysis Results",
+        "operationId": "analysis_results_api_v1_iterations__iteration_id__analyses__analysis_id__results_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "iteration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Iteration Id"
+            }
+          },
+          {
+            "name": "analysis_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Analysis Id"
+            }
+          },
+          {
+            "name": "after_sequence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": -1,
+              "title": "After Sequence"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 1000,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial ausente o inválida"
+          },
+          "403": {
+            "description": "Permisos insuficientes"
+          },
+          "409": {
+            "description": "Conflicto de identidad, estado o petición concurrente"
+          },
+          "413": {
+            "description": "Tamaño máximo superado"
+          },
+          "422": {
+            "description": "Contrato o cronología inválidos"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Action": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Event Id"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Type"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Message",
+            "default": ""
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_id",
+          "observed_at",
+          "type"
+        ],
+        "title": "Action"
+      },
+      "AnalysisRead": {
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "title": "Analysis Id"
+          },
+          "iteration_id": {
+            "type": "integer",
+            "title": "Iteration Id"
+          },
+          "shift_id": {
+            "type": "integer",
+            "title": "Shift Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "ros",
+              "video"
+            ],
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "processed_frames": {
+            "type": "integer",
+            "title": "Processed Frames"
+          },
+          "evaluable_frames": {
+            "type": "integer",
+            "title": "Evaluable Frames"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "analysis_id",
+          "iteration_id",
+          "shift_id",
+          "source",
+          "status",
+          "processed_frames",
+          "evaluable_frames",
+          "created_at",
+          "error"
+        ],
+        "title": "AnalysisRead"
+      },
+      "AnalysisRequest": {
+        "properties": {
+          "client_analysis_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Client Analysis Id"
+          },
+          "sources": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "ros",
+                "video"
+              ]
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Sources",
+            "default": [
+              "ros",
+              "video"
+            ]
+          },
+          "sample_fps": {
+            "type": "number",
+            "maximum": 25.0,
+            "minimum": 1.0,
+            "title": "Sample Fps",
+            "default": 5
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 0.9,
+            "minimum": 0.5,
+            "title": "Confidence",
+            "default": 0.5
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "client_analysis_id"
+        ],
+        "title": "AnalysisRequest"
+      },
+      "Assessment": {
+        "properties": {
+          "form_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Form Id"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "answers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Answers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "form_id",
+          "submitted_at"
+        ],
+        "title": "Assessment"
+      },
+      "Body_update_sample_api_v1_iterations__iteration_id__update_sample_post": {
+        "properties": {
+          "metadata": {
+            "type": "string",
+            "contentMediaType": "application/json",
+            "contentSchema": {
+              "$ref": "#/components/schemas/RealSample"
+            },
+            "title": "Metadata",
+            "description": "JSON conforme a Sample. Esquema: GET /api/v1/real/contracts/sample"
+          },
+          "image": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Image",
+            "description": "JPEG exacto del frame de la pose, hasta 8 MiB"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metadata",
+          "image"
+        ],
+        "title": "Body_update_sample_api_v1_iterations__iteration_id__update_sample_post"
+      },
+      "FormDefinition": {
+        "properties": {
+          "form_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Form Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "default": ""
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "form_id",
+          "title",
+          "questions"
+        ],
+        "title": "FormDefinition"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IterationRead": {
+        "properties": {
+          "iteration_id": {
+            "type": "integer",
+            "title": "Iteration Id"
+          },
+          "shift_id": {
+            "type": "integer",
+            "title": "Shift Id"
+          },
+          "client_iteration_id": {
+            "type": "string",
+            "title": "Client Iteration Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "cell_id": {
+            "type": "string",
+            "title": "Cell Id"
+          },
+          "operator_id": {
+            "type": "string",
+            "title": "Operator Id"
+          },
+          "external_operator_id": {
+            "type": "string",
+            "title": "External Operator Id"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "robot_assisted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Robot Assisted"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          },
+          "video_status": {
+            "type": "string",
+            "title": "Video Status"
+          },
+          "summary_received": {
+            "type": "boolean",
+            "title": "Summary Received"
+          },
+          "policies": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Policies"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "iteration_id",
+          "shift_id",
+          "client_iteration_id",
+          "source_id",
+          "cell_id",
+          "operator_id",
+          "external_operator_id",
+          "operator",
+          "started_at",
+          "ended_at",
+          "robot_assisted",
+          "label",
+          "status",
+          "sample_count",
+          "video_status",
+          "summary_received",
+          "policies"
+        ],
+        "title": "IterationRead"
+      },
+      "IterationStart": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "source_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "cell_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Cell Id",
+            "default": "cell-real-01"
+          },
+          "client_iteration_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Client Iteration Id"
+          },
+          "shift_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Shift Id"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "robot_assisted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Robot Assisted"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Label",
+            "default": ""
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "client_iteration_id",
+          "shift_id",
+          "started_at",
+          "operator"
+        ],
+        "title": "IterationStart"
+      },
+      "Joint": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "default": "detected",
+            "enum": [
+              "detected",
+              "estimated",
+              "missing"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Position"
+          },
+          "rotation_xyz": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rotation Xyz"
+          },
+          "image_xy_px": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Image Xy Px"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence"
+          }
+        },
+        "title": "Joint",
+        "type": "object"
+      },
+      "LabelUpdate": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "LabelUpdate"
+      },
+      "Operator": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "stature_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 2.3,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stature M"
+          },
+          "profile": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Profile",
+            "description": "Configuración HMI original; no se aplica desde el servidor."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Operator"
+      },
+      "Pose": {
+        "additionalProperties": false,
+        "properties": {
+          "joint_schema": {
+            "const": "posture.body33.v1",
+            "default": "posture.body33.v1",
+            "title": "Joint Schema",
+            "type": "string"
+          },
+          "estimator_name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Estimator Name",
+            "type": "string"
+          },
+          "estimator_version": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Estimator Version",
+            "type": "string"
+          },
+          "space": {
+            "$ref": "#/components/schemas/Space"
+          },
+          "joints": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Joint"
+            },
+            "title": "Joints",
+            "type": "object"
+          }
+        },
+        "required": [
+          "estimator_name",
+          "estimator_version",
+          "space",
+          "joints"
+        ],
+        "title": "Pose",
+        "type": "object"
+      },
+      "Question": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "scale",
+              "text",
+              "choice"
+            ],
+            "title": "Type",
+            "default": "scale"
+          },
+          "minimum": {
+            "type": "number",
+            "title": "Minimum",
+            "default": 0
+          },
+          "maximum": {
+            "type": "number",
+            "title": "Maximum",
+            "default": 10
+          },
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Choices"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "phases": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "pre",
+                "post"
+              ]
+            },
+            "type": "array",
+            "title": "Phases",
+            "default": [
+              "pre",
+              "post"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "Question"
+      },
+      "SampleRead": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sequence"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "frame_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Frame Id"
+          },
+          "video_time_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Video Time S"
+          },
+          "image_width": {
+            "type": "integer",
+            "maximum": 8192.0,
+            "minimum": 1.0,
+            "title": "Image Width"
+          },
+          "image_height": {
+            "type": "integer",
+            "maximum": 8192.0,
+            "minimum": 1.0,
+            "title": "Image Height"
+          },
+          "mirrored": {
+            "type": "boolean",
+            "title": "Mirrored",
+            "default": false
+          },
+          "source_frame_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Frame Index"
+          },
+          "pose": {
+            "$ref": "#/components/schemas/Pose"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolPose"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "iteration_id": {
+            "type": "integer",
+            "title": "Iteration Id"
+          },
+          "shift_id": {
+            "type": "integer",
+            "title": "Shift Id"
+          },
+          "operator_id": {
+            "type": "string",
+            "title": "Operator Id"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "image_sha256": {
+            "type": "string",
+            "title": "Image Sha256"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "sequence",
+          "captured_at",
+          "frame_id",
+          "video_time_s",
+          "image_width",
+          "image_height",
+          "pose",
+          "iteration_id",
+          "shift_id",
+          "operator_id",
+          "received_at",
+          "image_sha256"
+        ],
+        "title": "SampleRead"
+      },
+      "SampleReceipt": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "duplicate"
+            ],
+            "title": "Status"
+          },
+          "durable": {
+            "type": "boolean",
+            "title": "Durable"
+          },
+          "iteration_id": {
+            "type": "integer",
+            "title": "Iteration Id"
+          },
+          "shift_id": {
+            "type": "integer",
+            "title": "Shift Id"
+          },
+          "sequence": {
+            "type": "integer",
+            "title": "Sequence"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "status",
+          "durable",
+          "iteration_id",
+          "shift_id",
+          "sequence"
+        ],
+        "title": "SampleReceipt"
+      },
+      "Settings": {
+        "properties": {
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          },
+          "ros_metrics_mode": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "live",
+              "after_iteration"
+            ],
+            "title": "Ros Metrics Mode",
+            "default": "manual"
+          },
+          "video_analysis_mode": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "when_ready"
+            ],
+            "title": "Video Analysis Mode",
+            "default": "manual"
+          },
+          "sample_fps": {
+            "type": "number",
+            "maximum": 25.0,
+            "minimum": 1.0,
+            "title": "Sample Fps",
+            "default": 5
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 0.9,
+            "minimum": 0.5,
+            "title": "Confidence",
+            "default": 0.5
+          },
+          "assessment_form_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Assessment Form Id",
+            "default": "posture.shift-checkin.v1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_revision"
+        ],
+        "title": "Settings"
+      },
+      "ShiftEnd": {
+        "properties": {
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ended At"
+          },
+          "assessment": {
+            "$ref": "#/components/schemas/Assessment"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "aborted",
+              "error"
+            ],
+            "title": "Status",
+            "default": "completed"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Reason",
+            "default": ""
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ended_at",
+          "assessment"
+        ],
+        "title": "ShiftEnd"
+      },
+      "ShiftRead": {
+        "properties": {
+          "shift_id": {
+            "type": "integer",
+            "title": "Shift Id"
+          },
+          "client_shift_id": {
+            "type": "string",
+            "title": "Client Shift Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "cell_id": {
+            "type": "string",
+            "title": "Cell Id"
+          },
+          "operator_id": {
+            "type": "string",
+            "title": "Operator Id"
+          },
+          "external_operator_id": {
+            "type": "string",
+            "title": "External Operator Id"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "assessment": {
+            "$ref": "#/components/schemas/Assessment"
+          },
+          "form_definition": {
+            "$ref": "#/components/schemas/FormDefinition"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "shift_id",
+          "client_shift_id",
+          "source_id",
+          "cell_id",
+          "operator_id",
+          "external_operator_id",
+          "operator",
+          "started_at",
+          "ended_at",
+          "status",
+          "label",
+          "assessment",
+          "form_definition"
+        ],
+        "title": "ShiftRead"
+      },
+      "ShiftStart": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "source_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "cell_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Cell Id",
+            "default": "cell-real-01"
+          },
+          "client_shift_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Client Shift Id"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "assessment": {
+            "$ref": "#/components/schemas/Assessment"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Label",
+            "default": ""
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "client_shift_id",
+          "started_at",
+          "operator",
+          "assessment"
+        ],
+        "title": "ShiftStart"
+      },
+      "Space": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "unknown",
+              "model_relative",
+              "camera_metric",
+              "world_metric"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "frame_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Frame Id",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "m",
+              "mm",
+              "unknown"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "axes": {
+            "enum": [
+              "optical",
+              "ros",
+              "unknown"
+            ],
+            "title": "Axes",
+            "type": "string"
+          },
+          "rotation_unit": {
+            "enum": [
+              "rad",
+              "deg",
+              "unknown"
+            ],
+            "title": "Rotation Unit",
+            "type": "string"
+          },
+          "rotation_convention": {
+            "enum": [
+              "extrinsic_xyz",
+              "unknown"
+            ],
+            "title": "Rotation Convention",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "frame_id",
+          "unit",
+          "axes",
+          "rotation_unit",
+          "rotation_convention"
+        ],
+        "title": "Space",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ended At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "aborted",
+              "error",
+              "rejected"
+            ],
+            "title": "Status",
+            "default": "completed"
+          },
+          "completion_reason": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Completion Reason",
+            "default": "quality_check"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "type": "array",
+            "maxItems": 5000,
+            "title": "Actions"
+          },
+          "final_tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolPose"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "final_table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ended_at"
+        ],
+        "title": "Summary"
+      },
+      "TableState": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "height_m": {
+            "anyOf": [
+              {
+                "maximum": 3,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Height M"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Position"
+          },
+          "rotation_xyz": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rotation Xyz"
+          },
+          "space": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Space"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "measurement": {
+            "default": "unknown",
+            "enum": [
+              "measured",
+              "commanded",
+              "unknown"
+            ],
+            "title": "Measurement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "observed_at"
+        ],
+        "title": "TableState",
+        "type": "object"
+      },
+      "ToolPose": {
+        "additionalProperties": false,
+        "properties": {
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "position": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Position",
+            "type": "array"
+          },
+          "rotation_xyz": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Rotation Xyz",
+            "type": "array"
+          },
+          "space": {
+            "$ref": "#/components/schemas/Space"
+          },
+          "suction_commanded": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Suction Commanded"
+          }
+        },
+        "required": [
+          "observed_at",
+          "position",
+          "rotation_xyz",
+          "space"
+        ],
+        "title": "ToolPose",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VideoStart": {
+        "properties": {
+          "size_bytes": {
+            "type": "integer",
+            "maximum": 2147483648.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Size Bytes"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Sha256"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At",
+            "description": "UTC del primer fotograma, cuya posición relativa en el MP4 es cero."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "size_bytes",
+          "sha256",
+          "recorded_at"
+        ],
+        "title": "VideoStart"
+      },
+      "RealSample": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 0,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "captured_at": {
+            "format": "date-time",
+            "title": "Captured At",
+            "type": "string"
+          },
+          "frame_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Frame Id",
+            "type": "string"
+          },
+          "video_time_s": {
+            "minimum": 0,
+            "title": "Video Time S",
+            "type": "number"
+          },
+          "image_width": {
+            "maximum": 8192,
+            "minimum": 1,
+            "title": "Image Width",
+            "type": "integer"
+          },
+          "image_height": {
+            "maximum": 8192,
+            "minimum": 1,
+            "title": "Image Height",
+            "type": "integer"
+          },
+          "mirrored": {
+            "default": false,
+            "title": "Mirrored",
+            "type": "boolean"
+          },
+          "source_frame_index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Frame Index"
+          },
+          "pose": {
+            "$ref": "#/components/schemas/Pose"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolPose"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          }
+        },
+        "required": [
+          "sequence",
+          "captured_at",
+          "frame_id",
+          "video_time_s",
+          "image_width",
+          "image_height",
+          "pose"
+        ],
+        "title": "Sample",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "APIKeyCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "posture_session"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://172.19.33.30:8080"
+    },
+    {
+      "url": "https://172.19.33.30:8443"
+    }
+  ]
+}

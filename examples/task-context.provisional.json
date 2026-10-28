@@ -1,0 +1,115 @@
+{
+  "schema_version": "0.1",
+  "context_id": "deburring-hospital-bed-v1",
+  "revision": 1,
+  "status": "provisional",
+  "task_name": "Retirada de rebaba y acabado de pieza de cama hospitalaria",
+  "part": {
+    "mass_kg": {
+      "value": 2,
+      "provenance": "user_estimate",
+      "note": "Masa aproximada; confirmar con balanza antes de validar puntuaciones."
+    },
+    "dimensions_m": {
+      "value": [
+        0.3,
+        0.6,
+        null
+      ],
+      "provenance": "user_estimate",
+      "note": "Dos dimensiones conocidas; grosor desconocido."
+    }
+  },
+  "operation": {
+    "tool": {
+      "value": null,
+      "provenance": "unknown",
+      "note": "No se ha especificado herramienta ni fuerza de corte."
+    },
+    "posture": {
+      "value": "standing",
+      "provenance": "assumed",
+      "note": "Propuesta inicial; pendiente de confirmar."
+    },
+    "feet_supported_and_balanced": {
+      "value": true,
+      "provenance": "assumed",
+      "note": "No observable con encuadre desde rodillas."
+    },
+    "upper_arm_supported": {
+      "value": false,
+      "provenance": "assumed",
+      "note": "Puede cambiar durante el apoyo sobre la mesa."
+    },
+    "grip_quality": {
+      "value": "fair",
+      "provenance": "assumed",
+      "note": "Calidad de agarre provisional para REBA."
+    },
+    "wrist_twist": {
+      "value": "midrange",
+      "provenance": "assumed",
+      "note": "La rotación del antebrazo no está validada con la cámara."
+    },
+    "shock_or_sudden_force": {
+      "value": false,
+      "provenance": "assumed",
+      "note": "Ausencia de señal; no equivale a comprobación."
+    },
+    "repetitions_ge_4_per_min": {
+      "value": true,
+      "provenance": "assumed",
+      "note": "Sustituir por observación temporal/eventos cuando sea posible."
+    },
+    "static_hold_over_60s": {
+      "value": false,
+      "provenance": "assumed",
+      "note": "Sustituir por duración observada; no extrapolar al turno."
+    }
+  },
+  "phases": {
+    "robot_pick": {
+      "human_load_proxy_kg": {
+        "value": 0,
+        "provenance": "assumed",
+        "note": "Se supone que la persona no sostiene la pieza durante recogida del robot."
+      }
+    },
+    "robot_present": {
+      "human_load_proxy_kg": {
+        "value": 0,
+        "provenance": "assumed",
+        "note": "Válido solo antes del contacto/transferencia."
+      }
+    },
+    "human_transfer": {
+      "human_load_proxy_kg": {
+        "value": 2,
+        "provenance": "user_estimate",
+        "note": "Aproxima masa soportada; no incluye esfuerzo adicional."
+      }
+    },
+    "manual_finishing": {
+      "human_load_proxy_kg": {
+        "value": 2,
+        "provenance": "assumed",
+        "note": "Proxy inicial sin medir fuerza de corte o apoyo. No se declara límite superior ni valor conservador validado."
+      }
+    },
+    "part_place": {
+      "human_load_proxy_kg": {
+        "value": 2,
+        "provenance": "user_estimate",
+        "note": "Aproxima masa al apartar la pieza; revisar fase real."
+      }
+    }
+  },
+  "scoring_policy": {
+    "label": "preliminary_assumed",
+    "include_assumptions": true,
+    "do_not_treat_missing_keypoints_as_zero": true,
+    "keep_original_observation": true,
+    "rule_version": "pending-implementation"
+  },
+  "review_note": "Valores autorizados como provisionales para laboratorio; no constituyen una evaluación validada. No aplicar estos factores a otra tarea por defecto."
+}

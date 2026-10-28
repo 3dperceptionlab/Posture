@@ -1,0 +1,13 @@
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 OMP_NUM_THREADS=4
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libglib2.0-0 ca-certificates && rm -rf /var/lib/apt/lists/* && useradd --uid 10001 --create-home posture
+COPY requirements.lock requirements-vision.txt ./
+RUN pip install -r requirements.lock -r requirements-vision.txt && pip install --no-deps rtmlib==0.0.16
+COPY scripts/download_vision_models.py /tmp/download_models.py
+RUN python /tmp/download_models.py
+COPY --chown=posture:posture backend ./backend
+COPY --chown=posture:posture schemas ./schemas
+COPY --chown=posture:posture examples/task-context.provisional.json ./examples/task-context.provisional.json
+USER posture
+CMD ["python", "-m", "backend.vision_worker"]

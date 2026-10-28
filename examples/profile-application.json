@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.1",
+  "message_id": "lab-message-0002",
+  "source_id": "control-pc-lab-01",
+  "boot_id": "lab-boot-001",
+  "sequence": 2,
+  "cell_id": "cell-lab-01",
+  "session_id": "session-lab-001",
+  "operator_id": "operator-lab-01",
+  "study_id": "study-lab-001",
+  "emitted_at": "2026-10-16T09:00:00.150Z",
+  "clock_sync": "synchronized",
+  "message_type": "profile_application",
+  "observed_at": "2026-10-16T09:00:00.100Z",
+  "profile_id": "profile-lab-01",
+  "requested_revision": 3,
+  "status": "applied",
+  "robot": {
+    "state": "applied",
+    "applied_revision": 3,
+    "reason": null
+  },
+  "table": {
+    "state": "applied",
+    "applied_revision": 3,
+    "reason": null
+  }
+}
