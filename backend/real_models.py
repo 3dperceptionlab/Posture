@@ -32,7 +32,7 @@ class Operator(Contract):
     id: str | StrictInt
     name: Annotated[str, Field(min_length=1, max_length=200)]
     stature_m: Annotated[float, Field(ge=1, le=2.3)] | None = None
-    profile: dict = Field(default_factory=dict, description='Configuración HMI original; no se aplica desde el servidor.')
+    profile: dict = Field(default_factory=dict, description='Original HMI configuration; the server does not apply it to equipment.')
 
     @field_validator('id')
     @classmethod
@@ -175,7 +175,7 @@ class Summary(Contract):
 class VideoStart(Contract):
     size_bytes: Annotated[StrictInt, Field(gt=0, le=2 * 1024**3)]
     sha256: Annotated[str, Field(pattern='^[a-f0-9]{64}$')]
-    recorded_at: datetime = Field(description='UTC del primer fotograma, cuya posición relativa en el MP4 es cero.')
+    recorded_at: datetime = Field(description='UTC capture time of the first frame, whose relative MP4 presentation time is zero.')
 
 
 class AnalysisRequest(Contract):

@@ -1,17 +1,18 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "POSTURE · HMI / ROS · contrato 1.0",
-    "description": "Adquisición HMI/ROS por turnos e iteraciones y herramientas de laboratorio. Las operaciones de adquisición requieren Bearer ROS o cookie administradora. Recibir datos no implica calcular métricas. Contrato y ejemplos: docs/ROS_API.md.",
-    "version": "1.0.0"
+    "title": "POSTURE Data Processing and Dashboard · HMI / ROS contract 1.0",
+    "description": "Data processing and dashboard module: HMI/ROS acquisition by shift and workpiece iteration, plus independent laboratory tools. In strict mode, acquisition requires a ROS Bearer token or administrator session cookie. Receiving data does not imply metric calculation. Contract and examples: docs/ROS_API.md.",
+    "version": "1.0.0",
+    "x-posture-auth-mode": "strict"
   },
   "paths": {
     "/api/v1/assessment-forms": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Consultar formularios versionados para HMI",
+        "summary": "List versioned HMI questionnaires",
         "operationId": "forms_api_v1_assessment_forms_get",
         "responses": {
           "200": {
@@ -23,19 +24,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "security": [
@@ -49,9 +50,9 @@
       },
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Registrar una versión inmutable de formulario",
+        "summary": "Register an immutable questionnaire version",
         "operationId": "add_form_api_v1_assessment_forms_post",
         "requestBody": {
           "content": {
@@ -73,19 +74,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "security": [
@@ -98,9 +99,9 @@
     "/api/v1/real/settings": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Configuración independiente del trabajo en entorno real",
+        "summary": "Read independent production acquisition settings",
         "operationId": "settings_api_v1_real_settings_get",
         "responses": {
           "200": {
@@ -112,19 +113,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "security": [
@@ -138,9 +139,9 @@
       },
       "put": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Configurar políticas para las siguientes iteraciones",
+        "summary": "Configure policies for future iterations",
         "operationId": "set_settings_api_v1_real_settings_put",
         "requestBody": {
           "content": {
@@ -162,19 +163,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "security": [
@@ -187,9 +188,9 @@
     "/api/v1/shifts": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Iniciar turno con operario HMI y formulario previo",
+        "summary": "Start a shift with HMI operator and pre-shift questionnaire",
         "operationId": "start_shift_api_v1_shifts_post",
         "security": [
           {
@@ -221,25 +222,25 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       },
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Shifts",
         "operationId": "shifts_api_v1_shifts_get",
@@ -308,19 +309,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -328,9 +329,9 @@
     "/api/v1/shifts/{shift_id}/end": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Finalizar turno con formulario posterior",
+        "summary": "End a shift with its post-shift questionnaire",
         "operationId": "end_shift_api_v1_shifts__shift_id__end_post",
         "security": [
           {
@@ -373,19 +374,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -393,7 +394,7 @@
     "/api/v1/shifts/{shift_id}": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Shift Detail",
         "operationId": "shift_detail_api_v1_shifts__shift_id__get",
@@ -428,25 +429,25 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       },
       "patch": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Label Shift",
         "operationId": "label_shift_api_v1_shifts__shift_id__patch",
@@ -486,19 +487,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -506,9 +507,9 @@
     "/api/v1/iterations": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Iniciar pieza cuando el UR empieza a recogerla",
+        "summary": "Start an iteration when the UR begins workpiece pickup",
         "operationId": "start_iteration_api_v1_iterations_post",
         "security": [
           {
@@ -540,25 +541,25 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       },
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Iterations",
         "operationId": "iterations_api_v1_iterations_get",
@@ -645,19 +646,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -665,9 +666,9 @@
     "/api/v1/iterations/{iteration_id}/summary": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Cerrar pieza por Quality Check, error o cancelación",
+        "summary": "Close an iteration on Quality Check, error or cancellation",
         "operationId": "iteration_summary_api_v1_iterations__iteration_id__summary_post",
         "security": [
           {
@@ -710,19 +711,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -730,7 +731,7 @@
     "/api/v1/iterations/{iteration_id}": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Iteration Detail",
         "operationId": "iteration_detail_api_v1_iterations__iteration_id__get",
@@ -765,25 +766,25 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       },
       "patch": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Label Iteration",
         "operationId": "label_iteration_api_v1_iterations__iteration_id__patch",
@@ -823,19 +824,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -843,9 +844,9 @@
     "/api/v1/iterations/{iteration_id}/update_sample": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Guardar una pose ROS y su JPEG sin procesar por defecto",
+        "summary": "Store one ROS pose and its JPEG; processing is manual by default",
         "operationId": "update_sample_api_v1_iterations__iteration_id__update_sample_post",
         "security": [
           {
@@ -888,19 +889,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -908,9 +909,9 @@
     "/api/v1/real/contracts/sample": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "JSON Schema del campo metadata de update_sample",
+        "summary": "JSON Schema for the update_sample metadata field",
         "operationId": "sample_contract_api_v1_real_contracts_sample_get",
         "responses": {
           "200": {
@@ -922,19 +923,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "security": [
@@ -950,7 +951,7 @@
     "/api/v1/iterations/{iteration_id}/samples": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Samples",
         "operationId": "samples_api_v1_iterations__iteration_id__samples_get",
@@ -1011,19 +1012,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1031,9 +1032,9 @@
     "/api/v1/iterations/{iteration_id}/samples/{sequence}/image": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "JPEG original: solo administradores",
+        "summary": "Download original JPEG: administrators only",
         "operationId": "sample_image_api_v1_iterations__iteration_id__samples__sequence__image_get",
         "security": [
           {
@@ -1070,19 +1071,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1090,9 +1091,9 @@
     "/api/v1/iterations/{iteration_id}/video/uploads": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Preparar subida reanudable del MP4",
+        "summary": "Prepare a resumable MP4 upload",
         "operationId": "start_video_api_v1_iterations__iteration_id__video_uploads_post",
         "security": [
           {
@@ -1133,19 +1134,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1153,9 +1154,9 @@
     "/api/v1/iterations/{iteration_id}/video": {
       "put": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Subir bloque MP4, offset exacto; máximo 8 MiB",
+        "summary": "Upload an MP4 block at the exact offset; maximum 8 MiB",
         "operationId": "video_chunk_api_v1_iterations__iteration_id__video_put",
         "security": [
           {
@@ -1196,19 +1197,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         },
         "requestBody": {
@@ -1225,9 +1226,9 @@
       },
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Descargar MP4 original: solo administradores",
+        "summary": "Download original MP4: administrators only",
         "operationId": "original_video_api_v1_iterations__iteration_id__video_get",
         "security": [
           {
@@ -1255,19 +1256,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1275,9 +1276,9 @@
     "/api/v1/iterations/{iteration_id}/video/complete": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Verificar tamaño y SHA-256 y cerrar el MP4",
+        "summary": "Verify size and SHA-256 and complete the MP4 upload",
         "operationId": "complete_video_api_v1_iterations__iteration_id__video_complete_post",
         "security": [
           {
@@ -1308,19 +1309,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1328,9 +1329,9 @@
     "/api/v1/iterations/{iteration_id}/analyses": {
       "post": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
-        "summary": "Solicitar métricas ROS y/o análisis GPU del MP4",
+        "summary": "Request ROS metrics and/or GPU analysis of the MP4",
         "operationId": "analyze_api_v1_iterations__iteration_id__analyses_post",
         "security": [
           {
@@ -1374,19 +1375,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1394,7 +1395,7 @@
     "/api/v1/iterations/{iteration_id}/analyses/{analysis_id}/results": {
       "get": {
         "tags": [
-          "Trabajo en entorno real"
+          "Real-world acquisition"
         ],
         "summary": "Analysis Results",
         "operationId": "analysis_results_api_v1_iterations__iteration_id__analyses__analysis_id__results_get",
@@ -1458,19 +1459,19 @@
             }
           },
           "401": {
-            "description": "Credencial ausente o inválida"
+            "description": "Missing or invalid credentials"
           },
           "403": {
-            "description": "Permisos insuficientes"
+            "description": "Insufficient permissions"
           },
           "409": {
-            "description": "Conflicto de identidad, estado o petición concurrente"
+            "description": "Identity, state or concurrent request conflict"
           },
           "413": {
-            "description": "Tamaño máximo superado"
+            "description": "Maximum size exceeded"
           },
           "422": {
-            "description": "Contrato o cronología inválidos"
+            "description": "Invalid contract or chronology"
           }
         }
       }
@@ -1667,13 +1668,13 @@
               "$ref": "#/components/schemas/RealSample"
             },
             "title": "Metadata",
-            "description": "JSON conforme a Sample. Esquema: GET /api/v1/real/contracts/sample"
+            "description": "JSON matching Sample. Schema: GET /api/v1/real/contracts/sample"
           },
           "image": {
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "Image",
-            "description": "JPEG exacto del frame de la pose, hasta 8 MiB"
+            "description": "JPEG from the exact pose frame, up to 8 MiB"
           }
         },
         "type": "object",
@@ -2051,7 +2052,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Profile",
-            "description": "Configuración HMI original; no se aplica desde el servidor."
+            "description": "Original HMI configuration; the server does not apply it to equipment."
           }
         },
         "additionalProperties": false,
@@ -2898,7 +2899,7 @@
             "type": "string",
             "format": "date-time",
             "title": "Recorded At",
-            "description": "UTC del primer fotograma, cuya posición relativa en el MP4 es cero."
+            "description": "UTC capture time of the first frame, whose relative MP4 presentation time is zero."
           }
         },
         "additionalProperties": false,
@@ -3028,10 +3029,8 @@
   },
   "servers": [
     {
-      "url": "http://172.19.33.30:8080"
-    },
-    {
-      "url": "https://172.19.33.30:8443"
+      "url": "/",
+      "description": "Current deployment origin; configure your server URL in external clients."
     }
   ]
 }

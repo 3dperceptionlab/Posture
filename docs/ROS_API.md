@@ -1,132 +1,121 @@
-# POSTURE · Integración HMI / ROS · contrato 1.0
+# HMI / ROS integration API — contract 1.0
 
-Esta es la guía vigente para **trabajo en entorno real**. La API anterior y el laboratorio web siguen disponibles para pruebas. HMI gestiona las identidades, estaturas y perfiles; POSTURE conserva lo recibido y permite analizarlo. No aplica configuraciones a la célula desde estos endpoints.
+This is the current acquisition contract for the **POSTURE Data Processing and Dashboard Module**. HMI owns operator identities, stature and profiles. The server preserves the supplied snapshots and analyses observations; these endpoints do not apply equipment configurations. Legacy session/profile APIs remain available for laboratory tests.
 
-## 1. Empezar
+## 1. Connection and authentication
 
-- Base HTTP: `http://172.19.33.30:8080/api/v1`.
-- Base HTTPS: `https://172.19.33.30:8443/api/v1`; confiar en el certificado local según [CAMARA_HTTPS.md](CAMARA_HTTPS.md).
-- **Swagger UI:** `/api/docs` → sección **Trabajo en entorno real**. Botón **Authorize** → `HTTPBearer` → introducir el token sin repetir `Bearer`.
-- **OpenAPI 3.1:** `/openapi.json`. Copia entregable: [ros/openapi.json](ros/openapi.json).
-- Autenticación ROS en modo estricto: `Authorization: Bearer <POSTURE_INGEST_TOKEN>`. El token se configura fuera de los mensajes, nunca en JSON ni en el vídeo.
-- JSON Schema del frame: `GET /api/v1/real/contracts/sample`; copia [ros/sample.schema.json](ros/sample.schema.json).
-- Ejemplos sintéticos completos: [../examples/ros/](../examples/ros/). Cliente Python: [../examples/ros/client.py](../examples/ros/client.py), dependencia `httpx`.
-
-En modo estricto, el acceso a JPEG y MP4 originales y la solicitud manual de análisis requieren **cookie de administrador web**. El token ROS permite enviar esos archivos, consultar metadatos y estados, pero no descargarlos. Las cuentas de consulta pueden ver registros y métricas, no originales ni configuración administrativa.
-
-### Autenticación durante el desarrollo
-
-El servidor se configura mediante `POSTURE_AUTH_MODE` en `.env`:
-
-| Valor | Comportamiento |
-|---|---|
-| `development` | Sin cabecera `Authorization` ni cookie de sesión: acceso de administrador de pruebas, registrado como `development`. No hace falta iniciar sesión ni pulsar Authorize. |
-| `strict` | Exige las credenciales y permisos descritos arriba. Es el valor por defecto si no se configura la variable. |
-
-Actualmente se ha activado `development` para conectar HMI/ROS. Cada respuesta de
-`/api/` incluye `X-POSTURE-Auth-Mode`; en desarrollo también incluye
-`X-POSTURE-Auth-Warning`. Si la operación ha usado el acceso anónimo, incluye
-`X-POSTURE-Auth-Bypass: true`. El servidor avisa al arrancar y el dashboard muestra
-un aviso permanente. Las respuestas JSON mantienen su contrato original.
-
-Las credenciales incorrectas o caducadas se rechazan; los permisos de una cuenta
-de consulta o de un token ROS válido siguen aplicándose. Para probar sin token,
-omitir la cabecera completa y cualquier cookie de sesión antigua.
-
-Ejemplo sin credenciales:
+Examples assume commands run from the repository root. Configure your server URL:
 
 ```bash
-curl -i http://172.19.33.30:8080/api/v1/assessment-forms
-python examples/ros/client.py --url http://172.19.33.30:8080 forms
+export POSTURE_URL=http://localhost:8080
 ```
 
-El cliente Python admite que falte `POSTURE_INGEST_TOKEN` y muestra la advertencia
-del servidor una vez. Si esa variable existe en su entorno, envía el token.
-Swagger/OpenAPI en vivo indican el modo activo y permiten llamadas sin
-autenticación en desarrollo; la copia `ros/openapi.json` documenta los permisos
-del contrato estricto.
+For remote clients use your server hostname/IP. For HTTPS use `https://<your-server-host>:8443` and configure trust as described in [Camera and HTTPS](CAMERA_HTTPS.md).
 
-Para desplegar, cambiar a `POSTURE_AUTH_MODE=strict` y ejecutar
-`docker compose up -d --no-build api` para recrear el contenedor con la variable
-actualizada. No es necesario borrar ni regenerar los tokens existentes.
+- Base path: `/api/v1`; all endpoint paths below are relative to it.
+- Swagger UI: `/api/docs`, section **Real-world acquisition**.
+- Live OpenAPI 3.1: `/openapi.json`; [exported strict-mode reference](ros/openapi.json).
+- Frame schema: `GET /real/contracts/sample`; [exported JSON Schema](ros/sample.schema.json).
+- [Synthetic examples and Python client](../examples/ros/); the client requires `httpx`.
 
-## 2. Flujo que debe implementar el puente ROS
+### Authentication
+
+The deployment's `POSTURE_AUTH_MODE` controls authentication:
+
+| Mode | Behaviour |
+| --- | --- |
+| `strict` | Default. ROS uses `Authorization: Bearer <POSTURE_INGEST_TOKEN>`; web accounts use an HttpOnly session cookie. |
+| `development` | Requests with neither an Authorization header nor a session cookie use the `development` administrator. No login or Swagger Authorize step is needed. |
+
+In strict mode, ROS can submit data/files and read metadata/state. Original JPEG/MP4 downloads and manual analysis requests require an administrator web session. Viewer accounts cannot access originals or administrative configuration. In Swagger, choose **Authorize → HTTPBearer** and enter the token without repeating `Bearer`. Credentials never belong in pose JSON or video files.
+
+Development mode returns `X-POSTURE-Auth-Mode: development` and `X-POSTURE-Auth-Warning` on API responses. Operations using anonymous access also return `X-POSTURE-Auth-Bypass: true`. A startup warning and dashboard banner identify this mode. Response JSON contracts remain unchanged. Invalid/expired credentials are rejected rather than promoted to anonymous access; valid viewer/device credentials retain their permissions. Omit the entire Authorization header and stale session cookies when testing anonymously.
+
+```bash
+# No credentials: requires development mode on the server.
+curl -i "$POSTURE_URL/api/v1/assessment-forms"
+python examples/ros/client.py --url "$POSTURE_URL" forms
+```
+
+The Python client accepts an absent `POSTURE_INGEST_TOKEN` and logs the server warning once; if the variable exists, it sends that token. Live OpenAPI marks authentication optional in development. The exported reference retains strict-mode security.
+
+To require authentication, set `POSTURE_AUTH_MODE=strict` in `.env` and run `docker compose up -d --no-build api`. Existing credentials do not need regeneration.
+
+## 2. Producer lifecycle
 
 ```mermaid
 sequenceDiagram
     participant H as HMI / ROS
-    participant P as POSTURE
-    H->>P: GET /assessment-forms y /real/settings
-    H->>P: POST /shifts (operario + formulario pre)
+    participant P as Data Processing Module
+    H->>P: GET /assessment-forms and /real/settings
+    H->>P: POST /shifts (operator and pre-shift form)
     P-->>H: shift_id
-    loop Cada pieza
-        H->>P: POST /iterations (inicio recogida UR)
+    loop Each workpiece
+        H->>P: POST /iterations (pickup starts)
         P-->>H: iteration_id
-        loop Frecuencia dinámica disponible
-            H->>P: POST /iterations/{id}/update_sample (JSON + JPEG)
-            P-->>H: 202 · durable:true
+        loop Available dynamic sample rate
+            H->>P: POST /iterations/{id}/update_sample (JSON and JPEG)
+            P-->>H: 202, durable:true
         end
-        H->>P: POST /iterations/{id}/summary (Quality Check / error)
-        H->>P: POST /iterations/{id}/video/uploads (manifiesto)
-        H->>P: PUT /iterations/{id}/video?offset=N (bloques MP4)
+        H->>P: POST /iterations/{id}/summary (Quality Check or error)
+        H->>P: POST /iterations/{id}/video/uploads (manifest)
+        H->>P: PUT /iterations/{id}/video?offset=N (MP4 blocks)
         H->>P: POST /iterations/{id}/video/complete
     end
-    H->>P: POST /shifts/{id}/end (formulario post)
+    H->>P: POST /shifts/{id}/end (post-shift form)
 ```
 
-La subida del MP4 puede terminar después de empezar otra pieza o cerrar el turno. El resumen cierra la actividad física; no espera a la GPU ni a la transferencia del vídeo.
+The MP4 may finish uploading after the next piece starts or the shift closes. The summary closes physical activity without waiting for inference or video transfer.
 
-### Identificadores
+### Identifiers and retries
 
-`shift_id` e `iteration_id` son **enteros correlativos globales asignados por el servidor**, independientes entre sí. Se conservan tras reiniciar, no se reinician por día ni operario y nunca se reutilizan; puede haber huecos por reservas, pruebas o fallos.
+`shift_id` and `iteration_id` are independent, globally increasing integers allocated by the server. They survive restarts, never reset per operator/day and are not reused. Reservations, tests and failures can leave gaps.
 
-ROS genera **una vez** `client_shift_id` y `client_iteration_id`, preferiblemente UUID, y los guarda en su cola local. Son únicos dentro de `source_id`. Los conserva al reintentar. La respuesta contiene el ID numérico que utilizarán las siguientes llamadas. `operator.id` es el ID estable de HMI, numérico o texto; `operator_id` en las respuestas es el ID interno equivalente de POSTURE.
+ROS generates `client_shift_id` and `client_iteration_id` once, preferably UUIDs, and persists them in its local queue. They are unique within `source_id` and stay unchanged on retry. `operator.id` is the stable HMI identifier (number or text); response `operator_id` is the corresponding internal POSTURE identifier.
 
-Cada muestra tiene `sequence`, entero creciente desde 0 **dentro de su iteración**. Se admiten huecos y recepción fuera de orden; no se fabrica una frecuencia fija. Una muestra reenviada conserva su secuencia, JSON e imagen.
+Sample `sequence` increases from zero **within an iteration**. Gaps and out-of-order arrival are accepted without inventing a fixed sampling rate. A retry keeps the same sequence, metadata and image.
 
-## 3. Inicio de turno
+## 3. Start a shift
 
-`POST /shifts` · JSON · nuevo `201`, reintento idéntico `200`.
+`POST /shifts` · JSON · new record `201`, identical retry `200`.
 
-Ejemplo: [shift-start.json](../examples/ros/shift-start.json).
+Example: [shift-start.json](../examples/ros/shift-start.json).
 
-| Campo | Obligatorio | Significado |
-|---|---|---|
-| `source_id` | Sí | Identificador estable del puente ROS, hasta 128 caracteres. |
-| `cell_id` | No | Célula; por defecto `cell-real-01`. |
-| `client_shift_id` | Sí | Clave estable del turno generada en ROS. |
-| `started_at` | Sí | Fecha UTC real de inicio. |
-| `operator` | Sí | `{id, name, stature_m?, profile?}`. Estatura en metros o `null`; perfil JSON original de HMI. |
-| `assessment` | Sí | `{form_id, submitted_at, answers}` previo al turno. |
-| `label` | No | Etiqueta inicial; editable por administrador. |
-| `metadata` | No | Datos adicionales de contexto, JSON finito. |
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `source_id` | Yes | Stable bridge identifier, up to 128 characters |
+| `cell_id` | No | Cell identifier; default `cell-real-01` |
+| `client_shift_id` | Yes | Stable producer-generated shift key |
+| `started_at` | Yes | Actual UTC start time |
+| `operator` | Yes | `{id,name,stature_m?,profile?}`; stature in metres or null, original HMI profile JSON |
+| `assessment` | Yes | Pre-shift `{form_id,submitted_at,answers}` |
+| `label` | No | Initial review label; editable by an administrator |
+| `metadata` | No | Additional finite JSON |
 
-Una célula admite un turno activo. Cambiar de operario requiere cerrar ese turno e iniciar otro. POSTURE conserva la fotografía del operario y del formulario: las modificaciones posteriores no cambian el historial.
+One shift may be active per cell. Close it before changing operator. Operator and questionnaire snapshots preserve history when later settings change.
 
-## 4. Inicio de pieza
+## 4. Start a workpiece iteration
 
-`POST /iterations` · JSON · nuevo `201`, reintento idéntico `200`.
+`POST /iterations` · JSON · new record `201`, identical retry `200`.
 
-Ejemplo: [iteration-start.json](../examples/ros/iteration-start.json).
+Example: [iteration-start.json](../examples/ros/iteration-start.json).
 
-Enviar **cuando el UR empieza a moverse para recoger la pieza**. Incluye `source_id`, `cell_id`, `client_iteration_id`, `shift_id`, `started_at`, `operator`, `robot_assisted` (`true`, `false` o `null`), `label` y `metadata` opcionales. El operario, origen y célula deben coincidir con el turno. El perfil puede cambiar entre piezas y se conserva en cada una.
+Send when the UR starts moving to pick up a piece. Include `source_id`, `cell_id`, `client_iteration_id`, `shift_id`, `started_at`, `operator`; optional `robot_assisted` (`true`, `false`, `null`), `label` and `metadata`. Operator, source and cell must match the shift. Profiles may change between pieces and are preserved per iteration.
 
-No hay solapamiento. Si la pieza anterior seguía abierta, iniciar la siguiente la cierra con `completion_reason: next_iteration_started`, `auto_closed: true` y fecha final igual al nuevo inicio. Un resumen retrasado puede completar esa pieza indicando su fin real, siempre que no invada la siguiente ni el fin del turno.
+Iterations do not overlap. Starting a new piece closes an open predecessor with `completion_reason: next_iteration_started`, `auto_closed: true` and end time equal to the new start. A delayed summary can supply the real earlier end, without overlapping the successor or shift end.
 
-En una prueba sin robot (`robot_assisted: false`), HMI/ROS emite el inicio equivalente al comenzar el trabajo de esa pieza; el resto del protocolo es el mismo.
+For an unassisted trial (`robot_assisted:false`), HMI/ROS emits the equivalent start when the operator begins the piece. Piece counts and robot assistance are protocol observations, not inferred from connection or suction state.
 
-El número de piezas y el estado de asistencia son observaciones del protocolo; no se deducen del estado de conexión del robot o de la ventosa.
-
-## 5. Muestra: pose y frame en una petición
+## 5. Submit matching pose and frame
 
 `POST /iterations/{iteration_id}/update_sample` · `multipart/form-data`:
 
-| Parte | Contenido |
-|---|---|
-| `metadata` | Texto JSON conforme a [sample.json](../examples/ros/sample.json). |
-| `image` | JPEG de ese mismo fotograma, máximo 8 MiB. |
+| Part | Content |
+| --- | --- |
+| `metadata` | JSON text matching [sample.json](../examples/ros/sample.json) |
+| `image` | JPEG from that same frame, maximum 8 MiB |
 
-El cliente HTTP genera el boundary y `Content-Length`. **No establecer manualmente el Content-Type multipart**, porque se perdería el boundary. No se admite multipart sin longitud conocida (`411`). Metadatos hasta 1 MiB, petición completa hasta 10 MiB.
+Let the HTTP client generate the multipart boundary and Content-Length. Do not manually set multipart Content-Type. Requests without a known length return `411`. Metadata is limited to 1 MiB and the full request to 10 MiB.
 
 ```bash
 curl --fail-with-body "$POSTURE_URL/api/v1/iterations/123/update_sample" \
@@ -135,135 +124,149 @@ curl --fail-with-body "$POSTURE_URL/api/v1/iterations/123/update_sample" \
   -F 'image=@examples/ros/frame.synthetic.jpg;type=image/jpeg'
 ```
 
-Respuesta nueva:
+Omit the Authorization line for anonymous development requests. Replace the example iteration ID and fixture timestamps before sending.
+
+New-sample response:
 
 ```json
 {"status":"accepted","durable":true,"iteration_id":123,"shift_id":12,"sequence":0,"processing":"not_requested"}
 ```
 
-`202` significa guardado local duradero de JSON e imagen; **no significa calculado ni archivado en FIWARE**. Un duplicado idéntico devuelve `200`/`duplicate`; la misma secuencia con otra pose o imagen devuelve `409`.
+`202` confirms durable local JSON/image storage, not metric calculation or FIWARE archival. An identical retry returns `200`/`duplicate`; the same sequence with different pose/image data returns `409`.
 
-### Campos de metadata
+### Metadata fields
 
-- `sequence`, `frame_id`: identidad de la muestra y del fotograma original.
-- `captured_at`: fecha del fotograma, no la de envío.
-- `video_time_s`: tiempo de presentación relativo al **primer fotograma del MP4**, cuyo tiempo es cero. No calcularlo como índice dividido por fps nominales cuando la grabación tenga cadencia variable.
-- `image_width`, `image_height`, `mirrored`: dimensiones exactas y condición de la imagen. La imagen y el MP4 deben conservar la misma vista; documentar recortes o transformaciones en `metadata` si los hay.
-- `source_frame_index`: índice original del fotograma si está disponible.
-- `pose`: nombre/versión del estimador, esquema `posture.body33.v1`, convención espacial y las **33 claves**. Véase el esquema descargable para sus nombres.
-- `tool`, `table`: observaciones opcionales, cada una con su timestamp propio. No reemplazar una fecha antigua por la fecha del frame.
+- `sequence`, `frame_id`: sample and original frame identity.
+- `captured_at`: frame capture timestamp, not transmission time.
+- `video_time_s`: presentation time relative to the **first MP4 frame**, whose offset is zero. Do not use frame index divided by nominal FPS for variable-rate recordings.
+- `image_width`, `image_height`, `mirrored`: actual image dimensions/orientation. Image and video must preserve the same view; describe crops/transforms in `metadata`.
+- `source_frame_index`: original frame index if available.
+- `pose`: estimator name/version, `posture.body33.v1`, spatial conventions and all **33 named joint keys**.
+- `tool`, `table`: optional observations with their own capture timestamps. Do not replace an older equipment timestamp with the image timestamp.
 
-### Posición, rotación y ausencias
+### Geometry and missing data
 
-Cada joint usa `position: [x,y,z]`, `rotation_xyz: [x,y,z]`, `confidence: 0..1|null`, `status: detected|estimated|missing` e `image_xy_px: [u,v]|null`. Posición/rotación desconocida: `null`. Para un joint ausente, todas sus coordenadas y rotación son `null`.
+Each joint contains `position:[x,y,z]`, `rotation_xyz:[x,y,z]`, `confidence:0..1|null`, `status:detected|estimated|missing`, and optional `image_xy_px:[u,v]|null`. Unknown positions/rotations are null. Missing joints have null coordinates and rotation.
 
-`pose.space` contiene:
+`pose.space` declares:
 
-| Campo | Valores |
-|---|---|
+| Field | Values |
+| --- | --- |
 | `kind` | `unknown`, `model_relative`, `camera_metric`, `world_metric` |
-| `frame_id` | Nombre del marco; usar `unknown` si todavía no está definido. |
+| `frame_id` | Coordinate frame name; `unknown` if undefined |
 | `unit` | `m`, `mm`, `unknown` |
-| `axes` | `optical` (derecha, abajo, adelante), `ros` (adelante, izquierda, arriba), `unknown` |
+| `axes` | `optical` (right/down/forward), `ros` (forward/left/up), `unknown` |
 | `rotation_unit` | `rad`, `deg`, `unknown` |
 | `rotation_convention` | `extrinsic_xyz`, `unknown` |
 
-Como la fuente ROS aún no tiene convenciones acordadas, puede enviar `unknown` expresamente y conservar sus números. **El servidor no interpreta posiciones desconocidas como metros ni rotaciones como radianes.** Los campos 2D son opcionales; si se suministran permiten el cálculo preliminar existente. Si no hay 2D ni 3D métrico interpretable, un análisis solicitado devuelve `not_evaluable` y una razón, sin inventar puntuaciones. Las rotaciones originales se guardan; el cálculo geométrico actual usa posiciones articulares, no esas rotaciones.
+An undecided producer convention must be declared `unknown`; original numbers are preserved without interpreting them as metres/radians. Optional 2D points support preliminary calculations. Without usable 2D or declared metric 3D, requested analysis returns `not_evaluable` with a reason. Joint rotations are retained; current geometry uses joint positions rather than those rotations.
 
-## 6. Resumen y Quality Check
+## 6. Summary and Quality Check
 
 `POST /iterations/{iteration_id}/summary` · JSON · `200`.
 
-Ejemplo: [summary.json](../examples/ros/summary.json).
+Example: [summary.json](../examples/ros/summary.json).
 
-- `ended_at`: instante en el que el operario deja la pieza terminada y pulsa o dice **Quality Check**.
-- `status`: `completed`, `aborted`, `error` o `rejected`.
-- `completion_reason`: `quality_check` por defecto; para incidencias usar el motivo correspondiente, p. ej. `pickup_error`.
-- `actions`: eventos `{event_id, observed_at, type, message?, data?}`. Tipos libres estables: `pick_started`, `piece_presented`, `suction_on`, `suction_off`, `table_moved`, `manual_finishing_started`, `pause`, `resume`, `quality_check`, etc. IDs de evento únicos por pieza y timestamps dentro de su intervalo.
-- `final_tool`: **pose real del TCP de la ventosa del UR**, con posición, rotación, `space` y timestamp. `suction_commanded` es el estado de la orden; no se inventa confirmación física de agarre.
-- `final_table`: altura/pose y timestamp. `measurement` identifica `measured`, `commanded` o `unknown`.
-- `metadata`: otros datos de ROS.
+- `ended_at`: when the operator puts down the finished piece and triggers Quality Check.
+- `status`: `completed`, `aborted`, `error`, `rejected`.
+- `completion_reason`: defaults to `quality_check`; use an appropriate reason for incidents, e.g. `pickup_error`.
+- `actions`: `{event_id,observed_at,type,message?,data?}`; stable free-form types such as `pick_started`, `piece_presented`, `suction_on`, `suction_off`, `table_moved`, `manual_finishing_started`, `pause`, `resume`, `quality_check`. IDs are unique per iteration and times belong within it.
+- `final_tool`: actual UR suction-tool TCP pose, rotation, `space` and timestamp. `suction_commanded` is a command state, not measured grip confirmation.
+- `final_table`: final height/pose and timestamp; `measurement` is `measured`, `commanded` or `unknown`.
+- `metadata`: additional producer data.
 
-El cierre es independiente de la etiqueta de revisión. Repetir un resumen idéntico es seguro; sustituirlo por otro contenido devuelve `409`. Se rechaza un cierre anterior a sus muestras o posterior al inicio de la siguiente pieza. Pueden llegar después frames retrasados cuya fecha esté dentro del intervalo ya cerrado.
+Completion status is separate from the editable review label. An identical retry is safe; a different summary returns `409`. Closure cannot precede existing samples or exceed the next iteration start. Late samples captured within a closed interval may still arrive.
 
-## 7. MP4 completo y reanudación
+## 7. Full MP4 and resumable transfer
 
-El MP4 se asocia a la misma pieza y turno; no crea otra iteración. No se codifica en Base64 ni se incluye en el resumen JSON.
+The video belongs to the same iteration/shift. It is not Base64 and is not embedded in the summary.
 
-1. `POST /iterations/{id}/video/uploads` con `{size_bytes, sha256, recorded_at}`. `recorded_at` es la fecha UTC del primer fotograma. Devuelve `asset_id` y `uploaded_bytes`. Repetir el mismo manifiesto recupera el desplazamiento; otro archivo para esa pieza devuelve `409`.
-2. `PUT /iterations/{id}/video?offset=N` con bytes y `Content-Type: video/mp4`. Bloques de hasta 8 MiB; el cliente de ejemplo usa 4 MiB. El desplazamiento debe coincidir con los bytes confirmados. Un bloque ya recibido y con los mismos bytes devuelve `duplicate`.
-3. `POST /iterations/{id}/video/complete`. Comprueba tamaño, cabecera MP4 y SHA-256. Devuelve `ready`. La decodificación completa se comprueba al analizar, no durante una recepción manual.
+1. `POST /iterations/{id}/video/uploads`: `{size_bytes,sha256,recorded_at}`. The timestamp is the UTC capture time of the first frame. Response includes `asset_id` and `uploaded_bytes`. An identical manifest resumes; a different file for the iteration returns `409`.
+2. `PUT /iterations/{id}/video?offset=N`: binary `video/mp4`, blocks up to 8 MiB (the example client uses 4 MiB). Offset must match confirmed bytes. An already received identical block returns `duplicate`.
+3. `POST /iterations/{id}/video/complete`: checks size, MP4 header and SHA-256, returning `ready`. Full decoding is checked during analysis.
 
-Límite: 2 GiB por vídeo. Los originales MP4 quedan en `POSTURE/data/vision/uploads/video-real-<id>/`. Los JPEG quedan en el volumen persistente de medios bajo `real/<shift_id>/<iteration_id>/`. Ambos se conservan hasta su eliminación administrativa. No hay limpieza automática por terminar el turno.
+Maximum 2 GiB per video. Uploads use `data/vision/uploads/video-real-<id>/` by default. JPEGs use `real/<shift_id>/<iteration_id>/` inside the persistent media volume. Originals remain until administrative removal; ending a shift does not expire them.
 
-## 8. Final de turno y formularios configurables
+## 8. End a shift and configure questionnaires
 
-`POST /shifts/{shift_id}/end` con `ended_at`, `assessment`, `status: completed|aborted|error`, `reason` y `metadata` opcionales. Se requiere el formulario posterior; puede incluir un mapa de respuestas vacío si la versión vigente no tiene preguntas obligatorias.
+`POST /shifts/{shift_id}/end`: `ended_at`, `assessment`, optional `status:completed|aborted|error`, `reason`, `metadata`.
 
-Ejemplo: [shift-end.json](../examples/ros/shift-end.json).
+Example: [shift-end.json](../examples/ros/shift-end.json).
 
-Al cerrar el turno, una pieza aún abierta se cierra como `aborted`/`shift_ended`. Las transferencias pendientes pueden continuar. El cierre y su reintento son idempotentes.
+The post-shift form is required; its answers may be empty if the frozen form has no required questions. An open iteration is closed as `aborted`/`shift_ended`. Pending transfers may continue. Closure retries are idempotent.
 
-`GET /assessment-forms` devuelve definiciones con `form_id`, título y preguntas. Cada pregunta tiene `key`, texto, tipo `scale|text|choice`, límites/opciones, obligatoriedad y fases `pre`/`post`. Las respuestas se validan por claves y escala. No se calcula una puntuación agregada ni se etiqueta este formulario como NASA-TLX.
+`GET /assessment-forms` returns versioned definitions. Questions declare `key`, label, `scale|text|choice`, bounds/options, required flag and `pre`/`post` phases. Answers are validated. No aggregate NASA-TLX score is implied.
 
-Un administrador registra otra versión mediante `POST /assessment-forms` y la selecciona en **Trabajo en entorno real → Opciones del servidor**. No se sobrescriben definiciones existentes. El turno congela su versión al iniciarse, por lo que el formulario posterior corresponde a la misma versión aunque la configuración global haya cambiado.
+An administrator registers a new immutable version using `POST /assessment-forms` and selects it in the production server options (`/#real`). A shift freezes its form version, including the post-shift form, regardless of later global changes.
 
-## 9. Procesamiento: manual por defecto
+## 9. Processing: manual by default
 
-Recibir muestras, cerrar piezas y completar MP4 **no calcula métricas con la configuración inicial**.
+Initial settings do not calculate metrics when samples arrive, pieces close or videos complete.
 
-En **Trabajo en entorno real → Opciones del servidor**:
-
-| Opción | Valores |
-|---|---|
+| Setting | Values |
+| --- | --- |
 | `ros_metrics_mode` | `manual`, `live`, `after_iteration` |
-| `video_analysis_mode` | `manual`, `when_ready` (pieza cerrada y MP4 completo) |
-| `sample_fps` / `confidence` | Parámetros del análisis de vídeo; no limitan la adquisición ROS. |
-| `assessment_form_id` | Formulario para los próximos turnos. |
+| `video_analysis_mode` | `manual`, `when_ready` (closed iteration and complete MP4) |
+| `sample_fps`, `confidence` | Video analysis options; do not limit ROS acquisition |
+| `assessment_form_id` | Form for future shifts |
 
-`GET /real/settings` permite consultar las opciones; `PUT` requiere administrador y `expected_revision`. Las políticas quedan fijadas en cada nueva pieza. No cambian las opciones de captura web del laboratorio.
+`GET /real/settings` reads settings. Administrator `PUT` requires `expected_revision`. Policies freeze per new iteration and do not change browser laboratory capture settings.
 
-Solicitud manual, **administrador web**, `POST /iterations/{id}/analyses`:
+Manual administrator request: `POST /iterations/{id}/analyses`:
 
 ```json
-{"client_analysis_id":"UUID-ESTABLE-PARA-ESTA-SOLICITUD","sources":["ros","video"],"sample_fps":5,"confidence":0.5}
+{"client_analysis_id":"STABLE-UUID-FOR-THIS-REQUEST","sources":["ros","video"],"sample_fps":5,"confidence":0.5}
 ```
 
-`202` devuelve un trabajo por fuente. Reutilizar el ID con idénticas opciones no crea otros trabajos. Otro ID permite recalcular conservando los resultados anteriores. ROS calcula sobre las muestras recibidas al solicitarlo; una muestra llegada después requiere otro análisis manual. `live` incorpora también muestras retrasadas. El contexto ergonómico es el fijado al iniciar la pieza.
+`202` returns a job per source. An identical ID/options retry creates no duplicate jobs; another ID requests a new analysis while preserving previous results. Manual ROS analysis snapshots samples available at request time; later samples need another analysis. `live` also handles late samples. The ergonomic context is frozen at iteration start.
 
-El análisis de vídeo usa el motor CUDA existente, conserva PTS y versiones, y mantiene IDs de turno/pieza en trabajos, muestras derivadas, sesiones, imágenes y métricas. RULA/REBA siguen siendo preliminares y con supuestos explícitos. Una inferencia distinta no constituye por sí sola una validación de precisión.
+Video analysis uses the CUDA engine, preserving PTS, versions and shift/iteration associations in derived records. A different estimator does not itself establish greater accuracy; RULA/REBA remain preliminary with explicit assumptions.
 
-## 10. Consulta y etiquetas
+## 10. Queries and labels
 
-| Ruta | Función |
-|---|---|
-| `GET /shifts?operator_id=...&label=...&before_id=...&limit=100` | Buscar turnos de un operario; página descendente por ID. |
-| `GET /shifts/{id}` | Turno y formularios previo/posterior. |
-| `GET /iterations?shift_id=...&operator_id=...&label=...&status=...&before_id=...` | Filtrar piezas; `limit` máximo 500. |
-| `GET /iterations/{id}` | Datos de la pieza y estado de sus análisis. |
-| `GET /iterations/{id}/samples?after_sequence=-1&limit=100` | Paginación de pose original y metadatos; máximo 1.000. |
-| `GET /iterations/{id}/analyses/{analysis_id}/results?after_sequence=-1` | Métricas por muestra y fuente; máximo 5.000. |
-| `PATCH /shifts/{id}` / `PATCH /iterations/{id}` | Administrador: `{label:"grupo-ensayo"}`. |
-| `GET /iterations/{id}/samples/{sequence}/image` | Administrador: JPEG original. |
-| `GET /iterations/{id}/video` | Administrador: MP4 original, compatible con Range. |
+| Route | Purpose |
+| --- | --- |
+| `GET /shifts?operator_id=...&label=...&before_id=...&limit=100` | Descending ID pagination |
+| `GET /shifts/{id}` | Shift and pre/post questionnaires |
+| `GET /iterations?shift_id=...&operator_id=...&label=...&status=...&before_id=...` | Filter pieces; maximum limit 500 |
+| `GET /iterations/{id}` | Iteration and analysis state |
+| `GET /iterations/{id}/samples?after_sequence=-1&limit=100` | Original pose/metadata; maximum 1,000 |
+| `GET /iterations/{id}/analyses/{analysis_id}/results?after_sequence=-1` | Per-source metrics; maximum 5,000 |
+| `PATCH /shifts/{id}`, `PATCH /iterations/{id}` | Administrator `{"label":"trial-group"}` |
+| `GET /iterations/{id}/samples/{sequence}/image` | Administrator original JPEG |
+| `GET /iterations/{id}/video` | Administrator original MP4, with Range support |
 
-`operator_id` es el identificador interno de POSTURE, devuelto al iniciar el turno; el ID original de HMI queda en `external_operator_id`. Las etiquetas son texto libre y los filtros usan coincidencia exacta. Las muestras heredan su grupo de turno/pieza sin duplicar las etiquetas editables en todos los registros.
+Use POSTURE's internal `operator_id` returned at shift start; the HMI ID remains `external_operator_id`. Labels are free text, filtered by exact match. Samples inherit the shift/iteration association without duplicating editable labels.
 
-MongoDB conserva los originales y asociaciones. El trabajador archiva JSON en CrateDB (`posture_real_raw`, con `shift_id` e `iteration_id`) y publica contexto de turno/pieza en Orion-LD. Los resultados solicitados se publican por fuente y pasan por QuantumLeap; almacenar datos manualmente no necesita calcular puntuaciones. `archived_at` permite comprobar la etapa de archivo sin confundirla con la aceptación HTTP.
+MongoDB preserves originals and associations. Workers archive JSON in CrateDB's `posture_real_raw` with shift/iteration IDs and publish Orion-LD context. Requested metrics are published by source through QuantumLeap. `archived_at` tracks archival separately from HTTP acceptance.
 
-## 11. Errores y recuperación
+## 11. Errors and recovery
 
-| HTTP | Acción del emisor |
-|---|---|
-| `200/201/202` | Confirmar el elemento de la cola. `durable:true` en una muestra confirma guardado, no cálculo. |
-| `401/403` | Revisar token/permisos; no cambiar la identidad del mensaje para reintentar. |
-| `409` con `Retry-After` | Otra operación está usando el recurso: esperar y reenviar idéntico. |
-| Otros `409` | Revisar identidad reutilizada, solapamiento, offset o estado. No repetir indefinidamente. |
-| `411/413` | Incluir longitud o ajustar tamaño/bloque. |
-| `412` | Configuración editada por otro cliente: recargar revisión. |
-| `422` | Corregir contrato, fechas, imagen, formulario o hash. |
-| `429/5xx`, timeout o desconexión | Mantener datos localmente y reintentar con espera creciente. |
+| HTTP | Producer action |
+| --- | --- |
+| `200/201/202` | Acknowledge queue item; sample `durable:true` means stored, not analysed |
+| `401/403` | Check credentials/permissions; preserve message identity |
+| `409` with Retry-After | Wait and retry the identical request |
+| Other `409` | Check identity reuse, overlap, offset/state; do not retry indefinitely |
+| `411/413` | Supply length or reduce request/block size |
+| `412` | Reload configuration revision |
+| `422` | Fix contract, chronology, image, questionnaire or hash |
+| `429/5xx`, timeout/disconnection | Retain locally; retry with increasing delay |
 
-ROS debe persistir su cola y archivos hasta confirmación. El cliente de ejemplo hace reintentos de red, pero **no implementa una cola persistente ni un nodo ROS**. Ejecutarlo desde un trabajador de comunicación; no esperar a HTTP desde el bucle de control del robot. Tras reconectar, reenviar primero inicios de turno/pieza en su orden, después muestras/resúmenes y finalmente cierre de turno; los MP4 pueden completarse más tarde. No se aceptan inicios históricos que invadan turnos o piezas ya registrados.
+ROS must persist its queue/files until acknowledgement. The example client retries network requests but is not a persistent queue or ROS node. Run it from a communication worker, not the robot control loop. After reconnection, replay shift/iteration starts in order, then samples/summaries and shift end; MP4 completion may follow later. Historical starts cannot overlap existing shifts/iterations.
 
-Los datos de prueba incluidos son sintéticos; sustituir IDs, timestamps y archivos por datos propios antes de integrar.
+Included fixtures are synthetic. Replace IDs, timestamps, task factors and files with deployment-specific data before integration.
+
+## Maintain the OpenAPI reference
+
+After changing API documentation metadata and rebuilding/deploying the API image,
+regenerate the strict-mode production reference from the repository root:
+
+```bash
+docker compose exec -T api python - < scripts/export_api_docs.py > docs/ros/openapi.json
+```
+
+The exporter selects the production router, retains referenced components and
+uses a relative server URL. Its process-local authentication override does not
+change the running deployment's mode. Keep endpoint names, field names and
+enum values stable when translating documentation.

@@ -1,7 +1,7 @@
 """RULA/REBA tables and preliminary geometry; not a validated vision measurement.
 
 Table sources: McAtamney/Corlett 1993 and Hignett/McAtamney 2000,
-Cornell RULA worksheet and Cornell_REBA slides. See docs/METRICAS.md.
+Cornell RULA worksheet and Cornell_REBA slides. See docs/ERGONOMICS.md.
 """
 import math
 

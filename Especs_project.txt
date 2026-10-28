@@ -1,0 +1,124 @@
+Tenemos ya desarrollado el PC de control con ROS 2 controlando el robot y sacando la pose del operario.
+Ahora queremos desarrollar el proyecto del servidor donde se irán almacenando los datos (del robot y de la persona) y se creará una interfaz web para visualizar esos datos.
+Queremos un Docker en Ubuntu donde conviva las bases de datos, la API y el dashboard web, todo ello conectado y documentado para poder moverlo a otro servidor en el futuro.
+A continuación, se muestra un esquema de todos los módulos del sistema.
+
+PresentAtAngle: presentar la pieza a una altura e inclinación determinadas.
+
+HoldAndRotate: sujetar y rotar la pieza de forma controlada.
+
+ConfirmQuality: confirmar una operación de inspección o calidad.
+
+YieldToHuman: ceder el control ante una intervención humana.
+
+
+POSTURE no pretende que el operador programe o reenseñe el robot. Pretende que pueda intervenir con acciones sencillas como:
+
+Start.
+
+Slow.
+
+Pause.
+
+Nudge.
+
+Resume.
+
+Cancel.
+
+Stop.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│  PC de control en fábrica (Ubuntu + Vulcanexus)                │
+│  (Baja latencia, control en tiempo real)                       │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Nodos ROS 2 (control en tiempo real)                   │  │
+│  │  - posture_ergoassist_node (controla UR3e)              │  │
+│  │  - posture_hmi_bridge_node (HMI táctil local)           │  │
+│  │  - posture_sensors_node (lectura sensores)              │  │
+│  │  - posture_fiware_bridge_node (envía datos a nube)      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              │                                  │
+│                              │ (HTTP POST cada 1-5 segundos)   │
+│                              │ Vía Internet                    │
+└──────────────────────────────┼──────────────────────────────────┘
+                               │
+                               ↓
+┌──────────────────────────────┼──────────────────────────────────┐
+│  Servidor en la nube (nuestro servidores)                   │
+│  (Alta disponibilidad, accesible desde cualquier lugar)         │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Orion-LD + MongoDB                                      │  │
+│  │  - Almacena histórico de ciclos, posturas, alertas       │  │
+│  │  - Accesible vía HTTPS desde dashboard                   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  QuantumLeap + CrateDB                                   │  │
+│  │  - Histórico time-series para gráficas                   │  │
+│  │  - Consultas por rango de fechas, turnos, operarias      │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Dashboard Web (React/Vue)                               │  │
+│  │  - Accesible desde navegador (gestores, Pepri, UA)       │  │
+│  │  - Muestra gráficas, alertas, informes                   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+servidor de datos históricos (Orion-LD + MongoDB + QuantumLeap)
+comunicación vía HTTP/REST a través de la red
+
+
+┌─────────────────────────────────────────────────────────────────┐
+│  PC de control del robot (Ubuntu 22.04 + Vulcanexus)           │
+│  (En la fábrica, cerca del cobot UR3e)                         │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Nodos ROS 2 (Vulcanexus)                               │  │
+│  │  - posture_ergoassist_node                              │  │
+│  │  - posture_hmi_bridge_node                              │  │
+│  │  - posture_sensors_node                                 │  │
+│  │  - posture_fiware_bridge_node  ← (puente ROS 2 → HTTP)  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              │                                  │
+│                              │ (HTTP POST/PUT vía Internet/LAN)│
+│                              │ Puerto 1026                     │
+└──────────────────────────────┼──────────────────────────────────┘
+                               │
+                               ↓
+┌──────────────────────────────┼──────────────────────────────────┐
+│  Servidor remoto (Nube o PC diferente)                          │
+│  (Ej: AWS, Azure, Google Cloud, o servidor en oficina)          │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Docker containers                                       │  │
+│  │  ┌────────────────────┐  ┌──────────────────────────┐   │  │
+│  │  │  fiware-orion      │  │  mongo-db                │   │  │
+│  │  │  (Orion-LD)        │→ │  (Base de datos)         │   │  │
+│  │  │  Puerto: 1026      │  │  Puerto: 27017           │   │  │
+│  │  └────────────────────┘  └──────────────────────────┘   │  │
+│  │  ┌────────────────────┐                                  │  │
+│  │  │  quantumleap       │  (Opcional: para histórico)     │  │
+│  │  │  (Time-series DB)  │                                  │  │
+│  │  └────────────────────┘                                  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Dashboard Web (React/Vue)                               │  │
+│  │  - Consulta datos a Orion-LD vía HTTP                    │  │
+│  │  - Muestra gráficas en tiempo real                       │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘

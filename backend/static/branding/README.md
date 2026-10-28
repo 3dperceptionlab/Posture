@@ -1,8 +1,9 @@
-# Identidad de financiación
+# Funding identity and asset provenance
 
-El pie compartido se muestra en el acceso y en todas las vistas de la plataforma.
+The shared funding footer appears on the login screen and dashboard views.
 
-- Emblema UE: `eu-emblem.png`, descargado sin modificaciones de https://arise-middleware.eu/wp-content/uploads/2024/03/Flag_EU.png (17/10/2026). Se conserva su tamaño, proporción y color originales, con la mención «Cofinanciado por la Unión Europea», equivalente a la usada por ARISE.
-- Programa y convenio de **ARISE**: Horizonte Europa, n.º **101135784**. Fuente: https://cordis.europa.eu/project/id/101135784/es
-- POSTURE recibe apoyo a través de la convocatoria abierta de ARISE, según la documentación del proyecto. El número mostrado identifica el convenio de ARISE.
-- Los recursos gráficos se sirven localmente; visualizar el pie no requiere conexiones a terceros.
+- EU emblem: `eu-emblem.png`, downloaded without modification from [ARISE's published asset](https://arise-middleware.eu/wp-content/uploads/2024/03/Flag_EU.png) on 17 October 2026. Its proportions and colours are preserved. The Spanish interface displays the equivalent of “Co-funded by the European Union”.
+- Parent programme/project: Horizon Europe, **ARISE**, grant agreement **101135784**. [European Commission CORDIS record](https://cordis.europa.eu/project/id/101135784).
+- POSTURE receives support through an ARISE open call, according to the project documentation. The displayed grant number identifies ARISE, rather than a separate POSTURE grant.
+- Assets are served locally; displaying the footer does not require third-party requests.
+- `posture.svg` is the module's local documentation favicon. The EU emblem is used for funding acknowledgement, not as the application's own icon.

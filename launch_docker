@@ -52,5 +52,5 @@ case "${1:-up}" in
 esac
 if [[ "${1:-up}" == up ]]; then
   printf '\nPOSTURE: http://localhost:%s\nCredenciales: %s/.runtime/admin-credentials.txt\n' "$(sed -n 's/^POSTURE_PORT=//p' .env)" "$PWD"
-  printf 'Cámara: HTTPS en puerto %s (ver docs/CAMARA_HTTPS.md).\n' "${POSTURE_TLS_PORT:-8443}"
+  printf 'Camera: HTTPS on port %s (see docs/CAMERA_HTTPS.md).\n' "${POSTURE_TLS_PORT:-8443}"
 fi

@@ -34,14 +34,14 @@ async def lifespan(app):
     client.close()
 
 
-app=FastAPI(title='POSTURE · API',version='0.1.0',lifespan=lifespan,docs_url=None)
+app=FastAPI(title='POSTURE Data Processing and Dashboard API',version='0.1.0',lifespan=lifespan,docs_url=None)
 
 
 @app.get('/api/docs',include_in_schema=False)
 def api_docs():
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
-        title='POSTURE · Documentación de la API',
+        title='POSTURE · API documentation',
         swagger_js_url='/assets/vendor/swagger-ui/swagger-ui-bundle.js',
         swagger_css_url='/assets/vendor/swagger-ui/swagger-ui.css',
         swagger_favicon_url='/assets/branding/posture.svg',
@@ -793,10 +793,11 @@ def openapi_contract():
         return app.openapi_schema
     from fastapi.openapi.utils import get_openapi
     from .real_models import Sample
-    schema=get_openapi(title='POSTURE · API',version='1.0.0',routes=app.routes,
-        description='Adquisición HMI/ROS por turnos e iteraciones y herramientas de laboratorio. '
-                    'Las operaciones de adquisición requieren Bearer ROS o cookie administradora. '
-                    'Recibir datos no implica calcular métricas. Contrato y ejemplos: docs/ROS_API.md.')
+    schema=get_openapi(title='POSTURE Data Processing and Dashboard API',version='1.0.0',routes=app.routes,
+        description='Data processing and dashboard module: HMI/ROS acquisition by shift and workpiece iteration, '
+                    'plus independent laboratory tools. In strict mode, acquisition requires a ROS Bearer token '
+                    'or administrator session cookie. Receiving data does not imply metric calculation. '
+                    'Contract and examples: docs/ROS_API.md.')
     sample=Sample.model_json_schema(ref_template='#/components/schemas/{model}')
     components=schema.setdefault('components',{}).setdefault('schemas',{})
     components.update(sample.pop('$defs',{}));components['RealSample']=sample
@@ -810,7 +811,7 @@ def openapi_contract():
     mode=auth.auth_mode()
     schema['info']['x-posture-auth-mode']=mode
     if mode == 'development':
-        schema['info']['description']+=' MODO DESARROLLO: sin credenciales se permite acceso administrador. Las respuestas incluyen X-POSTURE-Auth-Warning. Las credenciales incorrectas se rechazan. En despliegue usar POSTURE_AUTH_MODE=strict.'
+        schema['info']['description']+=' DEVELOPMENT MODE: requests without credentials have administrator access. Responses include X-POSTURE-Auth-Warning. Invalid credentials are rejected. Use POSTURE_AUTH_MODE=strict for deployment.'
         for path in schema['paths'].values():
             for operation in path.values():
                 if isinstance(operation,dict) and operation.get('security'):

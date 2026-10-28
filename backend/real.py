@@ -23,11 +23,11 @@ from .vision_common import VISION, inside, create_job, get_asset
 from .real_models import (ShiftStart, ShiftEnd, IterationStart, Summary, Sample, VideoStart,
     AnalysisRequest, LabelUpdate, Settings, FormDefinition, ShiftRead, IterationRead, SampleRead, SampleReceipt, AnalysisRead)
 
-router = APIRouter(prefix='/api/v1', tags=['Trabajo en entorno real'],
+router = APIRouter(prefix='/api/v1', tags=['Real-world acquisition'],
     dependencies=[Depends(HTTPBearer(auto_error=False)),Depends(APIKeyCookie(name='posture_session',auto_error=False))],
-    responses={401:{'description':'Credencial ausente o inválida'},403:{'description':'Permisos insuficientes'},
-               409:{'description':'Conflicto de identidad, estado o petición concurrente'},
-               413:{'description':'Tamaño máximo superado'},422:{'description':'Contrato o cronología inválidos'}})
+    responses={401:{'description':'Missing or invalid credentials'},403:{'description':'Insufficient permissions'},
+               409:{'description':'Identity, state or concurrent request conflict'},
+               413:{'description':'Maximum size exceeded'},422:{'description':'Invalid contract or chronology'}})
 MAX_IMAGE = 8 * 1024**2
 MAX_BLOCK = 8 * 1024**2
 DEFAULT_FORM = {'form_id':'posture.shift-checkin.v1','title':'Estado antes y después del turno',
@@ -165,13 +165,13 @@ def save_assessment(shift,assessment,phase):
         'form_definition':shift['form_definition']})},upsert=True)
 
 
-@router.get('/assessment-forms',summary='Consultar formularios versionados para HMI')
+@router.get('/assessment-forms',summary='List versioned HMI questionnaires')
 def forms(request:Request):
     auth.principal(request,device=True)
     return [public(f) for f in db.real_forms.find().sort('form_id',1)]
 
 
-@router.post('/assessment-forms',status_code=201,summary='Registrar una versión inmutable de formulario',openapi_extra={'security':[{'APIKeyCookie':[]}]})
+@router.post('/assessment-forms',status_code=201,summary='Register an immutable questionnaire version',openapi_extra={'security':[{'APIKeyCookie':[]}]})
 def add_form(request:Request,body:FormDefinition):
     auth.admin(request); data=encoded(body)
     with lock('forms:'+body.form_id):
@@ -184,13 +184,13 @@ def add_form(request:Request,body:FormDefinition):
     return data
 
 
-@router.get('/real/settings',summary='Configuración independiente del trabajo en entorno real')
+@router.get('/real/settings',summary='Read independent production acquisition settings')
 def settings(request:Request):
     auth.principal(request,device=True)
     return clean(db.config.find_one({'_id':'real-settings'}))
 
 
-@router.put('/real/settings',summary='Configurar políticas para las siguientes iteraciones',openapi_extra={'security':[{'APIKeyCookie':[]}]})
+@router.put('/real/settings',summary='Configure policies for future iterations',openapi_extra={'security':[{'APIKeyCookie':[]}]})
 def set_settings(request:Request,body:Settings):
     actor=auth.admin(request); data=encoded(body); expected=data.pop('expected_revision')
     form_by_id(data['assessment_form_id'])
@@ -200,7 +200,7 @@ def set_settings(request:Request,body:Settings):
     return clean(row)
 
 
-@router.post('/shifts',status_code=201,response_model=ShiftRead,summary='Iniciar turno con operario HMI y formulario previo')
+@router.post('/shifts',status_code=201,response_model=ShiftRead,summary='Start a shift with HMI operator and pre-shift questionnaire')
 def start_shift(request:Request,body:ShiftStart):
     auth.editor(request); data=encoded(body); fingerprint=digest(data)
     key=key_for('shift',data['source_id'],data['client_shift_id'])
@@ -226,7 +226,7 @@ def start_shift(request:Request,body:ShiftStart):
     return public(row)
 
 
-@router.post('/shifts/{shift_id}/end',response_model=ShiftRead,summary='Finalizar turno con formulario posterior')
+@router.post('/shifts/{shift_id}/end',response_model=ShiftRead,summary='End a shift with its post-shift questionnaire')
 def end_shift(shift_id:int,request:Request,body:ShiftEnd):
     auth.editor(request); data=encoded(body); shift=get_shift(shift_id)
     with lock('cell:'+shift['cell_id']):
@@ -274,7 +274,7 @@ def label_shift(shift_id:int,request:Request,body:LabelUpdate):
     return public(get_shift(shift_id))
 
 
-@router.post('/iterations',status_code=201,response_model=IterationRead,summary='Iniciar pieza cuando el UR empieza a recogerla')
+@router.post('/iterations',status_code=201,response_model=IterationRead,summary='Start an iteration when the UR begins workpiece pickup')
 def start_iteration(request:Request,body:IterationStart):
     auth.editor(request); data=encoded(body); fingerprint=digest(data)
     key=key_for('iteration',data['source_id'],data['client_iteration_id'])
@@ -307,7 +307,7 @@ def start_iteration(request:Request,body:IterationStart):
     return public(row)
 
 
-@router.post('/iterations/{iteration_id}/summary',response_model=IterationRead,summary='Cerrar pieza por Quality Check, error o cancelación')
+@router.post('/iterations/{iteration_id}/summary',response_model=IterationRead,summary='Close an iteration on Quality Check, error or cancellation')
 def iteration_summary(iteration_id:int,request:Request,body:Summary):
     auth.editor(request); data=encoded(body); initial=get_iteration(iteration_id)
     with lock('cell:'+initial['cell_id']):
@@ -376,11 +376,11 @@ def write_atomic(path,data):
 
 
 @router.post('/iterations/{iteration_id}/update_sample',status_code=202,response_model=SampleReceipt,
-    summary='Guardar una pose ROS y su JPEG sin procesar por defecto')
+    summary='Store one ROS pose and its JPEG; processing is manual by default')
 async def update_sample(iteration_id:int,request:Request,
-    metadata:str=Form(description='JSON conforme a Sample. Esquema: GET /api/v1/real/contracts/sample',
+    metadata:str=Form(description='JSON matching Sample. Schema: GET /api/v1/real/contracts/sample',
         json_schema_extra={'contentMediaType':'application/json','contentSchema':{'$ref':'#/components/schemas/RealSample'}}),
-    image:UploadFile=File(description='JPEG exacto del frame de la pose, hasta 8 MiB')):
+    image:UploadFile=File(description='JPEG from the exact pose frame, up to 8 MiB')):
     await run_in_threadpool(auth.editor,request)
     if len(metadata)>1024**2: raise HTTPException(413,'Metadatos limitados a 1 MiB.')
     try: data=encoded(Sample.model_validate_json(metadata))
@@ -430,7 +430,7 @@ def persist_sample(iteration_id,data,raw):
         'sequence':data['sequence'],'processing':'not_requested' if iteration['policies']['ros_metrics_mode']=='manual' else 'policy'}
 
 
-@router.get('/real/contracts/sample',summary='JSON Schema del campo metadata de update_sample')
+@router.get('/real/contracts/sample',summary='JSON Schema for the update_sample metadata field')
 def sample_contract(request:Request):
     auth.principal(request,device=True)
     return Sample.model_json_schema()
@@ -442,14 +442,14 @@ def samples(iteration_id:int,request:Request,after_sequence:int=-1,limit:int=Que
     return [public(s) for s in db.real_samples.find({'iteration_id':iteration_id,'sequence':{'$gt':after_sequence}}).sort('sequence',1).limit(limit)]
 
 
-@router.get('/iterations/{iteration_id}/samples/{sequence}/image',summary='JPEG original: solo administradores',openapi_extra={'security':[{'APIKeyCookie':[]}]})
+@router.get('/iterations/{iteration_id}/samples/{sequence}/image',summary='Download original JPEG: administrators only',openapi_extra={'security':[{'APIKeyCookie':[]}]})
 def sample_image(iteration_id:int,sequence:int,request:Request):
     auth.admin(request); row=db.real_samples.find_one({'iteration_id':iteration_id,'sequence':sequence})
     if not row or not (MEDIA/row['image_path']).is_file(): raise HTTPException(404,'Imagen no disponible.')
     return FileResponse(MEDIA/row['image_path'],media_type='image/jpeg')
 
 
-@router.post('/iterations/{iteration_id}/video/uploads',status_code=201,summary='Preparar subida reanudable del MP4')
+@router.post('/iterations/{iteration_id}/video/uploads',status_code=201,summary='Prepare a resumable MP4 upload')
 def start_video(iteration_id:int,request:Request,body:VideoStart):
     actor=auth.editor(request); data=encoded(body); row=get_iteration(iteration_id)
     with lock('video:'+str(iteration_id)):
@@ -471,7 +471,7 @@ def start_video(iteration_id:int,request:Request,body:VideoStart):
     return public({k:v for k,v in asset.items() if k!='path'})
 
 
-@router.put('/iterations/{iteration_id}/video',summary='Subir bloque MP4, offset exacto; máximo 8 MiB',
+@router.put('/iterations/{iteration_id}/video',summary='Upload an MP4 block at the exact offset; maximum 8 MiB',
     openapi_extra={'requestBody':{'required':True,'content':{'video/mp4':{'schema':{'type':'string','format':'binary'}}}}})
 async def video_chunk(iteration_id:int,request:Request,offset:int=Query(ge=0)):
     await run_in_threadpool(auth.editor,request)
@@ -501,7 +501,7 @@ def persist_video_chunk(iteration_id,offset,raw):
     return {'status':'accepted','uploaded_bytes':offset+len(raw)}
 
 
-@router.post('/iterations/{iteration_id}/video/complete',summary='Verificar tamaño y SHA-256 y cerrar el MP4')
+@router.post('/iterations/{iteration_id}/video/complete',summary='Verify size and SHA-256 and complete the MP4 upload')
 def complete_video(iteration_id:int,request:Request):
     auth.editor(request); row=get_iteration(iteration_id)
     with lock('video:'+str(iteration_id)):
@@ -518,7 +518,7 @@ def complete_video(iteration_id:int,request:Request):
         'processing':'not_requested' if row['policies']['video_analysis_mode']=='manual' else 'policy'}
 
 
-@router.get('/iterations/{iteration_id}/video',summary='Descargar MP4 original: solo administradores',openapi_extra={'security':[{'APIKeyCookie':[]}]})
+@router.get('/iterations/{iteration_id}/video',summary='Download original MP4: administrators only',openapi_extra={'security':[{'APIKeyCookie':[]}]})
 def original_video(iteration_id:int,request:Request):
     auth.admin(request); get_iteration(iteration_id); asset=get_asset('video-real-'+str(iteration_id))
     if asset['status']!='ready': raise HTTPException(409,'Vídeo incompleto.')
@@ -550,7 +550,7 @@ def request_analyses(row,data,actor):
     return result
 
 
-@router.post('/iterations/{iteration_id}/analyses',status_code=202,response_model=list[AnalysisRead],summary='Solicitar métricas ROS y/o análisis GPU del MP4',openapi_extra={'security':[{'APIKeyCookie':[]}]})
+@router.post('/iterations/{iteration_id}/analyses',status_code=202,response_model=list[AnalysisRead],summary='Request ROS metrics and/or GPU analysis of the MP4',openapi_extra={'security':[{'APIKeyCookie':[]}]})
 def analyze(iteration_id:int,request:Request,body:AnalysisRequest):
     actor=auth.admin(request); row=get_iteration(iteration_id); data=encoded(body)
     with lock('analysis:'+str(iteration_id)):

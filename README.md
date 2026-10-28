@@ -1,32 +1,125 @@
-# POSTURE
+# POSTURE Data Processing and Dashboard Module
 
-Servidor Docker para datos de pose humana, UR3, mesa de trabajo, perfiles, sesiones, estudios, autoevaluaciones y ergonomía preliminar.
+Reusable server module for collecting, storing, processing and visualising human pose, robot and workstation data in human–robot collaboration studies. It provides an HTTP API, preliminary ergonomic indicators, a browser dashboard and an optional GPU video processing service.
 
-## Inicio
+Developed within **POSTURE**, supported through an **ARISE open call**. ARISE is co-funded by the European Union's **Horizon Europe** programme under grant agreement **101135784**. See [Funding and acknowledgements](#funding-and-acknowledgements).
+
+## Role in the POSTURE system
+
+The HMI and ROS modules manage operator identity, profiles and equipment control. This module records their observations and workpiece iterations, processes requested analyses, and exposes results for review. It also works independently with uploaded videos, a browser camera or synthetic laboratory data.
+
+```mermaid
+flowchart LR
+    H[HMI module] --> R[ROS and equipment control module]
+    R -->|HTTP: shifts, iterations, pose, images, video| A[Acquisition API]
+    U[Browser or uploaded video] --> A
+    subgraph M[Data Processing and Dashboard Module]
+        A --> D[(Persistent storage)]
+        D --> W[Metrics and optional GPU processing]
+        W --> D
+        D --> V[Dashboard and exports]
+        W --> F[Orion-LD and QuantumLeap]
+    end
+```
+
+The ROS workspace is on the repository's `main` branch; this module is on `Server-Dashboard`. No ROS installation is required on the server. See [Module specification](docs/MODULE.md) for responsibilities, interfaces and lifecycle.
+
+## Requirements
+
+- Docker Engine with Docker Compose v2, and permission to run Docker.
+- Internet access for the initial image build and model download.
+- For video pose estimation: an NVIDIA GPU, compatible driver and NVIDIA Container Toolkit. ROS ingestion and CPU ergonomic calculations do not require a GPU.
+- A current browser; client camera access requires HTTPS or `localhost`.
+
+The target deployment class is 8 CPU cores, 32 GB RAM and an RTX 4050-class GPU. GPU processing has been exercised on an RTX 4090; performance on smaller devices must be measured. Host Python and Node.js are not required.
+
+## Quick start
+
+Clone this branch into any directory:
 
 ```bash
-cd /home/dmulero/workspace/POSTURE
+git clone --branch Server-Dashboard <repository-url> posture-data-dashboard
+cd posture-data-dashboard
+cp .env.example .env
+chmod 600 .env
+```
+
+Edit `.env` before starting:
+
+1. Replace `POSTURE_ADMIN_PASSWORD` and `POSTURE_INGEST_TOKEN` with separate random values. Generate them with `openssl rand -hex 20` and `openssl rand -hex 32`, respectively.
+2. Keep `POSTURE_AUTH_MODE=strict` for authenticated access. Use `development` when anonymous administrator access is intended for integration testing.
+3. Set `POSTURE_TLS_HOST` to the hostname/IP used by clients; `localhost` is suitable for a browser on the server itself. `POSTURE_TLS_EXTRA_HOST` supplies another certificate name/address.
+4. Set `POSTURE_GPU_DEVICE` to the NVIDIA device index or UUID.
+
+```bash
 ./launch_docker
 ```
 
-Web y API: **http://localhost:8080**. Desde otro equipo, sustituir localhost por la dirección del servidor. En este despliegue: **http://172.19.33.30:8080**. Documentación interactiva: `/api/docs`.
+| Interface | Local URL |
+| --- | --- |
+| Dashboard | `http://localhost:8080/` |
+| ROS acquisition view | `http://localhost:8080/#real` |
+| Video and camera laboratory | `http://localhost:8080/#vision` |
+| Interactive API documentation | `http://localhost:8080/api/docs` |
+| OpenAPI | `http://localhost:8080/openapi.json` |
+| Health check | `http://localhost:8080/healthz` |
 
-**Vídeos y cámara:** abre **Laboratorio de visión**. Puedes subir vídeos/carpetas desde el cliente, analizar los de `examples/videos/` o grabar la cámara USB del cliente. Acceso seguro: **https://172.19.33.30:8443/#vision**. Para la cámara, instala la raíz local indicada en [Cámara y HTTPS](docs/CAMARA_HTTPS.md), o utiliza el túnel SSH/localhost descrito allí.
+For remote clients, replace `localhost` with your server address. HTTPS uses port `8443` by default. See [Camera access and HTTPS](docs/CAMERA_HTTPS.md) for certificate trust or an SSH tunnel. Current dashboard labels are in Spanish; this documentation uses their English equivalents and route names.
 
-**HMI / ROS en producción:** abre **Trabajo en entorno real** (`/#real`). Turnos y piezas tienen IDs correlativos, etiquetas y formularios previos/posteriores. Se reciben pose + JPEG y MP4 completo; por defecto solo se guardan. Las opciones de análisis de producción son independientes del laboratorio. Guía vigente para el equipo ROS: **[ROS_API.md](docs/ROS_API.md)**, con OpenAPI 3.1, ejemplos y cliente Python. Los perfiles gestionados por la HMI se muestran como datos recibidos; las herramientas locales de perfiles y simulación siguen disponibles.
+If `.env` is absent, `launch_docker` generates random credentials and writes initial administrator details to `.runtime/admin-credentials.txt`. When supplying `.env` yourself, use the credentials you configured. The initial password variable creates the account only if it does not exist; later password changes are managed by the application.
 
-**Autenticación configurable:** `POSTURE_AUTH_MODE=development` en `.env` permite usar la API sin token ni sesión, con permisos de administrador de pruebas y advertencias en las respuestas, los logs de arranque y el dashboard. Los tokens y cuentas existentes siguen funcionando; las credenciales incorrectas se rechazan. Para el despliegue, usar `POSTURE_AUTH_MODE=strict` (valor predeterminado) y recrear el contenedor API. Véase [autenticación de desarrollo](docs/ROS_API.md#autenticación-durante-el-desarrollo).
+### Without GPU processing
 
-En el primer inicio se generan credenciales aleatorias:
+After preparing `.env`, start only the API, CPU worker, storage and FIWARE services:
 
-- Administrador: usuario `admin`; contraseña en `.runtime/admin-credentials.txt`.
-- Credencial del puente ROS: `POSTURE_INGEST_TOKEN` en `.env`.
+```bash
+docker compose up -d --build api worker mongo orion crate quantumleap https
+./launch_docker certificate
+```
 
-Estos archivos tienen permisos `600`, están excluidos del Git y de la imagen. No hay contraseña predeterminada compartida. Puedes cambiar la contraseña desde **Sistema**; la variable inicial solo crea la cuenta si todavía no existe.
+ROS acquisition, storage, the dashboard and metrics from received poses work without `vision`. Video pose estimation requires that service.
 
-No se necesita instalar Python o Node en el host. El script reconoce el wrapper Docker autorizado de este servidor; en otros equipos utiliza Docker normalmente.
+## Authentication and configuration
 
-El servicio de visión necesita una GPU NVIDIA, su controlador y NVIDIA Container Toolkit. En Clarke se ha comprobado la RTX 4090. `POSTURE_GPU_DEVICE` permite seleccionar otra GPU. Las primeras construcciones descargan las dependencias CUDA y los modelos; los análisis posteriores no necesitan Internet. Para usar solo la ingestión ROS sin visión, arranca los servicios `api worker mongo orion crate quantumleap https` con Compose, omitiendo `vision`.
+Configuration is supplied through `.env`; see [.env.example](.env.example) and [Module configuration](docs/MODULE.md#configuration).
+
+- `strict` is the default. Web accounts use an HttpOnly session cookie; ROS uses `POSTURE_INGEST_TOKEN` as a Bearer token.
+- `development` accepts requests without credentials as the `development` administrator. The dashboard, startup logs and response headers display warnings. Incorrect/expired credentials are still rejected.
+- Apply an authentication mode change with `docker compose up -d --no-build api`.
+
+See [ROS authentication](docs/ROS_API.md#authentication). Credentials, runtime data, recordings and backups are excluded from source control. Database ports are private to the Compose network.
+
+## Features
+
+- Durable, idempotent acquisition of pose, robot/tool and table observations.
+- Shifts and workpiece iterations with numeric IDs, operator snapshots, action logs, labels and configurable pre/post-shift questionnaires.
+- Matching pose/JPEG samples and resumable full MP4 uploads.
+- Independent processing policies for ROS acquisition and browser laboratory capture; initial defaults are manual.
+- Preliminary RULA/REBA calculations with angles, components, context, assumptions and version provenance.
+- Optional YOLOX/RTMW GPU inference from files or browser camera recordings; synchronised playback and CSV/JSON exports.
+- Administrator/viewer accounts, retained study images, diagnostics and background deletion.
+- Laboratory profiles with a provisional stature-based table-height rule, revisions and synthetic data.
+
+**RULA/REBA outputs are preliminary research indicators**, not a validated occupational or clinical assessment. SMPL and monocular 3D reconstruction are not implemented. See [Ergonomic methods](docs/ERGONOMICS.md).
+
+## Services and persistence
+
+| Service | Responsibility | Persistence |
+| --- | --- | --- |
+| `api` | FastAPI, authentication, acquisition and static dashboard | MongoDB and media volume |
+| `worker` | CPU metrics, archival, publication/retries and deletion | Durable MongoDB state |
+| `vision` | Optional CUDA YOLOX/RTMW inference and video jobs | MongoDB, media and `data/vision/` |
+| `https` | Caddy and local TLS certificates | `caddy_data`, `caddy_config` volumes |
+| `mongo` | Application database and separate broker databases | `mongo` volume |
+| `orion` | Orion-LD 1.12.0, NGSI-LD context | MongoDB |
+| `quantumleap` | QuantumLeap 1.0.0, notification history | CrateDB tables |
+| `crate` | CrateDB 5.10.16, canonical JSON and FIWARE series | `crate` volume |
+
+Compose prefixes network/volume names with its project name (`posture` by default). HTTP/HTTPS expose `8080`/`8443`; other services remain internal. Dashboard and Swagger assets are served locally. Dependencies are pinned in `requirements.lock`, `requirements-vision.txt` and the Dockerfiles.
+
+Reception is acknowledged after a journaled MongoDB write. Workers archive originals in CrateDB and publish context to Orion-LD; its subscription forwards notifications to QuantumLeap. `202 Accepted` does not mean analysis or archival has completed. Use job/record status and diagnostics to track later stages. For reproducible counts, use uniquely identified originals; repeated FIWARE notifications may create extra time-series rows.
+
+## Operation and verification
 
 ```bash
 ./launch_docker status
@@ -34,101 +127,31 @@ El servicio de visión necesita una GPU NVIDIA, su controlador y NVIDIA Containe
 ./launch_docker stop
 ./launch_docker up
 ./launch_docker down
-./launch_docker test
-```
-
-`stop` y `down` conservan los volúmenes. Cambiar `POSTURE_PORT`/`POSTURE_BIND` en `.env` y ejecutar `up` permite modificar la escucha. Para publicar detrás de un proxy HTTPS, configurar `POSTURE_COOKIE_SECURE=true` y reenviar el host original. Las bases de datos no publican puertos en el host.
-
-## Aplicación disponible
-
-- Inicio de sesión, cuentas de administración/consulta y cambio de contraseña.
-- Vista general, selección de sesión, gráficos de RULA/REBA y cobertura de detección.
-- Reproducción de esqueleto 2D; vista de TCP en XY/XZ y rotaciones articulares.
-- Operarios y perfiles versionados; control de ediciones concurrentes y confirmación de aplicación por robot/mesa.
-- Inicio/cierre de sesiones, filtros, eventos de ciclo, exportación CSV y borrado administrativo.
-- Estudios con conservación manual de imágenes; originales JPEG de estudio solo para administradores.
-- Autoevaluación propia al final de turno, recibida por API y consultable en web. Incluye formulario web de laboratorio.
-- Contexto de tarea editable/versionado con factores provisionales autorizados y procedencia de cada dato.
-- Indicadores RULA/REBA preliminares con componentes, calidad, supuestos y versión. Nunca se presentan como una evaluación validada.
-- Resumen temporal para ROS/HMI con distribución de puntuaciones, duración observada, huecos y señal de revisión.
-- Datos sintéticos mediante **Simulación de laboratorio**, identificados como simulación. Las imágenes generadas son dibujos sintéticos, no fotografías de personas.
-- Diagnóstico de servicios, trabajador, archivos pendientes y errores de entrega.
-- Laboratorio de visión con RTMW/RTMPose en GPU, subida de vídeos por bloques, importación de carpetas del servidor, cámara inmediata/diferida y reproducción de pose sobre vídeo sincronizada con RULA/REBA. [Uso y límites](docs/LABORATORIO_VISION.md).
-
-## Componentes
-
-| Servicio | Función | Persistencia |
-| --- | --- | --- |
-| `api` | FastAPI, autenticación, ingestión y web estática | MongoDB y volumen de imágenes |
-| `worker` | Métricas, archivo y publicación con reintentos; purga solicitada | Estados duraderos en MongoDB |
-| `vision` | Detección YOLOX/RTMW en RTX 4090, trabajos de vídeo y cámara | MongoDB, imágenes y `data/vision` |
-| `https` | Caddy, acceso TLS local para la cámara del navegador | Autoridad/certificados en `posture_caddy_data` y `posture_caddy_config` |
-| `mongo` | Base `posture_app` y bases internas del broker separadas | `posture_mongo` |
-| `orion` | Orion-LD 1.12.0, contexto NGSI-LD de ergonomía/robot/mesa | MongoDB |
-| `quantumleap` | QuantumLeap 1.0.0, histórico de notificaciones de ergonomía | Tablas propias en CrateDB |
-| `crate` | CrateDB 5.10.16, originales canónicos y series FIWARE | `posture_crate` |
-
-La web se sirve desde la misma API y origen, sin CDN para sus recursos. Todos los contenedores pertenecen a la red `posture_posture`. Se exponen `8080` (HTTP) y `8443` (HTTPS); las bases de datos y la GPU no publican puertos. Las imágenes de los servicios y el intérprete están fijadas por digest; las dependencias de la API están fijadas en `requirements.lock`, y las principales de visión en `requirements-vision.txt` y `Dockerfile.vision`.
-
-Orion arranca con `-mongocOnly`: la imagen publicada utiliza de otro modo un controlador legado que falla con MongoDB 7. Se ha verificado la creación de suscripción, publicación y recuperación de contexto, así como filas reales de QuantumLeap en CrateDB.
-
-La aplicación confirma recepción después de persistir en MongoDB con journal. El trabajador archiva JSON original en `doc.posture_raw` con ID único y publica contexto reciente hacia Orion-LD; la suscripción envía métricas a QuantumLeap. Datos atrasados permanecen en el histórico original sin sustituir un contexto más nuevo.
-
-La consulta detallada de la web usa MongoDB para preservar tipos y procedencia exacta; CrateDB conserva el archivo canónico y el histórico FIWARE. Un `202` de ingestión no significa que las otras etapas hayan terminado. **Sistema** muestra pendientes y confirmaciones de archivo.
-
-Los reenvíos son idempotentes para los originales. Una repetición de notificación FIWARE puede producir otra fila temporal de QuantumLeap; para análisis reproducible usar el original identificado por `message_id`, no contar notificaciones como muestras independientes.
-
-## Integración ROS/HMI
-
-Recorrido: **HMI → PC ROS → API**. El equipo ROS integra el envío JSON y los endpoints de sesiones/perfiles; el servidor no ejecuta ROS ni envía trayectorias de control.
-
-- [Guía de integración implementada](docs/API.md).
-- [Contrato v0.1 y convenciones](docs/CONTRATO_ROS_API.md).
-- [Esquema de mensajes](schemas/messages.schema.json).
-- [Ejemplo completo de 33 puntos + robot + mesa](examples/telemetry.json).
-- [Perfil](examples/operator-profile.json), [confirmación](examples/profile-application.json), [formulario](examples/shift-assessment.json).
-
-Los IDs de `examples/` son ficticios. Para utilizarlos, crear operario/estudio/sesión por API y sustituir referencias. La pose del robot del ejemplo no es una consigna aprobada para movimiento.
-
-## Métricas y procesamiento de imágenes
-
-Ver [métodos y límites](docs/METRICAS.md). Se calculan métricas desde puntos recibidos por ROS o detectados en el [laboratorio de visión](docs/LABORATORIO_VISION.md). Esta entrega incorpora detección 2D YOLOX/RTMW en CUDA; **SMPL y la reconstrucción 3D monocular siguen pendientes**.
-
-Objetivo de despliegue: 8 núcleos, 32 GB de RAM, una GPU del nivel de RTX 4050. La ingestión y las métricas desde ROS no necesitan GPU; el nuevo servicio de visión utiliza CUDA. Clarke tiene actualmente una RTX 4090 y una TITAN V; se usa la 4090. El rendimiento debe medirse también en el equipo objetivo.
-
-Los resúmenes para HMI se pueden consultar cada 30 s. Las métricas individuales se procesan al recibir datos. El resumen no prolonga una postura a través de huecos superiores a 2 s y no genera aviso de actualidad con datos de más de 120 s. Los registros de alerta en la web se presentan como observaciones históricas con su fecha.
-
-## Copia, traslado y restauración
-
-```bash
 ./backup_docker
-```
-
-Genera `backups/FECHA_UTC/`: volúmenes MongoDB/CrateDB/imágenes, autoridad TLS, archivos de `data/vision`, código, configuración y sumas SHA-256. Detiene brevemente los servicios del proyecto para tomar una copia consistente y vuelve a arrancar los que estaban activos. El directorio es privado porque contiene credenciales y datos. Los vídeos importados de `examples` se incluyen en el archivo de código; los vídeos subidos y sus derivados se incluyen en `vision.tar.gz`.
-
-En otro servidor con Docker Compose:
-
-1. Extraer `source.tar.gz` en una carpeta vacía y copiar el directorio de backup.
-2. Ejecutar `./restore_docker /ruta/al/backup --replace`.
-3. Acceder con las credenciales de la copia; ajustar dirección/puerto antes de abrir el acceso a ROS.
-
-`--replace` sustituye los datos del proyecto destino. Para ensayo aislado en el mismo host:
-
-```bash
-POSTURE_PROJECT=posture-restore POSTURE_PORT=18081 POSTURE_TLS_PORT=18443 ./restore_docker /ruta/al/backup --replace
-```
-
-`restore_docker` verifica SHA-256 antes de reemplazar volúmenes. Las copias antiguas permanecen hasta que se eliminen manualmente; un borrado desde web afecta al despliegue activo, no a copias guardadas fuera de él.
-
-Un proyecto de restauración con nombre distinto utiliza `data/<proyecto>/vision` para separar el bind mount del original. `POSTURE_VISION_DIR` permite elegir una ruta explícita. Las copias v1, previas a visión/HTTPS, siguen siendo aceptadas; no contienen vídeos ni autoridad TLS de esta ampliación.
-
-## Pruebas
-
-```bash
 ./launch_docker test
-docker compose exec -T api python -m tests.integration
 ```
 
-La integración usa registros QA identificados y elimina sus propios operarios/cuentas/sesiones. Necesita una célula sin sesión activa; no ejecutarla sobre una prueba industrial en curso. Las pruebas de interfaz usan un contenedor Playwright independiente; sus capturas locales están en `.runtime/qa`.
+`stop` and `down` preserve data. Backups contain credentials and study data and belong outside public source control. See [Backup and restore](docs/MODULE.md#backup-and-restore). Integration checks require a dedicated test deployment in strict mode; see [Verification](docs/VERIFICATION.md).
 
-Ver [registro de verificación](docs/VERIFICACION.md). La validación de tablas y contrato no sustituye la calibración de la cámara ni la validación ergonómica de campo.
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Module specification](docs/MODULE.md) | Boundaries, inputs/outputs, configuration and operation |
+| [HMI/ROS API](docs/ROS_API.md) | Current shift/iteration contract 1.0 |
+| [OpenAPI](docs/ros/openapi.json) / [sample schema](docs/ros/sample.schema.json) | Machine-readable references |
+| [ROS client and fixtures](examples/ros/) | Python HTTP client and synthetic examples |
+| [Laboratory and legacy API](docs/API.md) | Sessions, profiles, telemetry and vision endpoints |
+| [Vision laboratory](docs/VISION_LAB.md) | Capture modes, GPU processing and playback |
+| [Camera and HTTPS](docs/CAMERA_HTTPS.md) | Local CA, browser trust and SSH |
+| [Ergonomic methods](docs/ERGONOMICS.md) | Scoring, provenance and limitations |
+| [Legacy contract](docs/LEGACY_ROS_CONTRACT.md) | Archived v0.1 conventions and design proposal |
+| [Verification](docs/VERIFICATION.md) | Recorded checks and reproducibility limits |
+
+## Funding and acknowledgements
+
+<img src="backend/static/branding/eu-emblem.png" alt="European Union emblem" width="90">
+
+**Co-funded by the European Union.** POSTURE receives support through the ARISE open-call programme. ARISE is funded under Horizon Europe, grant agreement **101135784**. This identifier refers to the parent ARISE project.
+
+References: [ARISE](https://arise-middleware.eu/), [European Commission CORDIS record](https://cordis.europa.eu/project/id/101135784). See [branding provenance](backend/static/branding/README.md). Third-party software/model terms remain those of their providers; see [vision provenance](docs/VISION_LAB.md#engine-and-provenance) and the bundled Swagger UI licence.

@@ -1,129 +1,127 @@
-# API implementada · POSTURE v0.1
+# Laboratory and legacy API — v0.1
 
-**Integración vigente HMI/ROS por turnos e iteraciones:** [ROS_API.md](ROS_API.md), contrato 1.0. Las rutas de esta guía v0.1 se conservan para compatibilidad y laboratorio. La HMI gestiona los perfiles en operación real; la nueva adquisición guarda datos y solo procesa bajo petición con la configuración inicial.
+For production HMI/ROS acquisition use [ROS_API.md](ROS_API.md), contract 1.0. The endpoints below remain available for laboratory profiles, sessions and compatibility. Production profiles are owned by HMI; production acquisition initially stores data without processing.
 
-Base: `http://SERVIDOR:8080/api/v1`. FastAPI expone el listado de rutas y cuerpos en `/api/docs`; `GET /api/v1/schema` devuelve el JSON Schema completo del intercambio.
+Base URL: `http://localhost:8080/api/v1`; replace the host for remote use. Swagger UI is at `/api/docs`; `GET /schema` returns the legacy message JSON Schema.
 
-## Autenticación
+## Authentication
 
-- Web: `POST /auth/login` con `username`/`password`; cookie HttpOnly y SameSite Strict, con caducidad de 12 horas.
-- ROS: `Authorization: Bearer TOKEN`, donde TOKEN se toma de `POSTURE_INGEST_TOKEN` de `.env`.
-- ROS puede consultar operarios/sesiones/células/perfiles, administrar parámetros por el contrato y enviar ingestión/imágenes. No puede administrar cuentas ni leer imágenes guardadas.
-- Consulta: cuenta `viewer`, sin escritura, imágenes ni diagnóstico administrativo.
+In default strict mode:
 
-Las credenciales no se incorporan al JSON de pose ni al JavaScript del navegador.
+- Web: `POST /auth/login` with `username`/`password`; 12-hour HttpOnly, SameSite Strict session cookie.
+- ROS: `Authorization: Bearer <POSTURE_INGEST_TOKEN>`.
+- ROS can query operators/sessions/cells/profiles, manage legacy parameters and submit telemetry/images. It cannot administer web accounts or retrieve retained images.
+- Viewer accounts have read-only access without original images or administrative diagnostics.
 
-## Secuencia para el equipo ROS
+Development mode permits anonymous administrator requests with warnings. See [Authentication](ROS_API.md#authentication). Credentials are never embedded in pose JSON or browser JavaScript.
 
-1. Obtener `GET /operators`; cada elemento contiene su perfil vigente.
-2. La HMI identifica/selecciona al operario y ROS solicita `POST /sessions` con `operator_id`, `cell_id`, `name`, `condition` y `study_id` opcional. El servidor devuelve `session_id`. Una célula admite una sesión activa.
-3. Consultar `GET /cells/cell-lab-01/desired-profile`, cada ~2 s o con ETag. Se devuelve perfil y sesión. `If-None-Match` permite respuesta `304`.
-4. Validar/aplicar la nueva revisión localmente cuando corresponda. Enviar `profile_application` con estados por componente; una confirmación parcial no se acepta como completa.
-5. Enviar `POST /ingest` con el mensaje v0.1. Cada componente lleva su propio timestamp. Emplear IDs y secuencias estables en reintentos.
-6. Si se envía imagen, publicar primero sus metadatos `frame` dentro de telemetría y luego `PUT /frames/{frame_id}` con JPEG 1920×1080 y `Content-Type: image/jpeg`. `X-Content-SHA256` permite verificar su hash. No se requieren headers de sesión adicionales: se toman de los metadatos validados.
-7. Consultar `GET /cells/cell-lab-01/summary?window_seconds=60` aproximadamente cada 30 s para información HMI. `preliminary_alert` solo se activa con datos recientes y tiempo observado suficiente; mostrar fecha, cobertura y carácter preliminar.
-8. Enviar eventos de fase/ciclo cuando el origen disponga de ellos. La orden de ventosa no confirma físicamente agarre ni fin de acabado.
-9. Al final del turno, enviar `shift_assessment` y cerrar mediante `POST /sessions/{id}/close` o evento `session_ended`.
+## Legacy ROS sequence
 
-La HMI se comunica con ROS; estas llamadas pertenecen al puente ROS, no exigen acceso directo de la HMI al servidor.
+1. `GET /operators`: read operators and current profiles.
+2. `POST /sessions`: supply `operator_id`, optional `cell_id`, `name`, `condition`, `study_id`. The returned `session_id` identifies the cell's one active session.
+3. Poll `GET /cells/{id}/desired-profile` about every two seconds, optionally using ETag/`If-None-Match`.
+4. Validate/apply the revision locally at a safe state; send `profile_application` with per-component status.
+5. `POST /ingest`: submit v0.1 messages, preserving each component's timestamp and stable retry identity.
+6. For images, first submit `frame` metadata in telemetry, then `PUT /frames/{frame_id}` with 1920×1080 JPEG and `Content-Type:image/jpeg`. Optional `X-Content-SHA256` verifies content. Session/study association comes from validated metadata, not extra session headers.
+7. Poll `GET /cells/{id}/summary?window_seconds=60` about every 30 seconds; display capture age, coverage and preliminary status.
+8. Send available phase/cycle events. A suction command does not confirm physical grip or completion.
+9. Send `shift_assessment` and close with `POST /sessions/{id}/close` or `session_ended`.
 
-## Rutas principales
+These legacy calls belong to the ROS bridge acting for HMI, rather than requiring HMI-to-server connectivity.
 
-| Método / ruta | Uso |
+## Main endpoints
+
+Paths below are relative to `/api/v1`.
+
+| Method/path | Purpose |
 | --- | --- |
-| `GET /operators` | Operarios, perfil vigente y última confirmación. |
-| `GET /profile-rules/table-height` | Regla provisional, factor, versión y límites de estatura. Lectura web/ROS autenticada. |
-| `POST /operators` | Crear nombre y configuración inicial; devuelve perfil e IDs. |
-| `PUT /operator-profiles/{id}` | Nueva revisión. `expected_revision` o `If-Match`; conflicto devuelve `412`. |
-| `GET /operator-profiles/{id}/revisions` | Histórico de configuración. |
-| `DELETE /operators/{id}` | Administrador; retira perfil y solicita borrado de datos asociados. |
-| `GET /cells` | Células y asignación de sesión. |
-| `GET /cells/{id}/desired-profile` | Configuración deseada para ROS, con ETag. |
-| `GET /cells/{id}/summary` | Distribución temporal, ángulos medios, cobertura y aviso preliminar. |
-| `GET /sessions` | Filtros `operator_id`, `study_id`, `from_date`, `to_date`; `limit` hasta 500. |
-| `POST /sessions` | Iniciar sesión. |
-| `POST /sessions/{id}/close` | Cerrar sesión; conserva datos. |
-| `DELETE /sessions/{id}` | Ocultar de inmediato y purgar originales, métricas e imágenes en segundo plano. |
-| `GET /sessions/{id}/timeline` | Últimas 600 muestras por defecto; `limit` hasta 2.000, `before` para consultar anteriores. |
-| `GET /sessions/{id}/export.csv` | Exportación de todos los resultados de la sesión. |
-| `POST /ingest` | Mensaje individual. |
-| `POST /ingest/batches` | Objeto `batch_id` y array `messages` de 1–100; estado por mensaje. |
-| `POST /studies` / `GET /studies` | Crear/listar estudios. |
-| `GET /studies/{id}/frames` | Administrador; metadatos de imágenes disponibles. |
-| `DELETE /studies/{id}` | Administrador; estudio y datos de sus sesiones. |
-| `PUT /frames/{frame_id}` | Subir JPEG, máximo 8 MiB, vinculado a metadatos anteriores. |
-| `GET /frames/{frame_id}` | Administrador; original conservado de estudio. |
-| `GET /assessments` | Respuestas de autoevaluación; filtro `session_id`. |
-| `GET /alerts` | Observaciones históricas de indicadores elevados. |
-| `POST /alerts/{id}/acknowledge` | Marcar observación revisada. |
-| `GET /context` / `PUT /context` | Contexto ergonómico versionado, valores y procedencia. |
-| `GET /stats` / `GET /system` | Resumen y diagnóstico administrativo. |
-| `POST /demo` | Administrador; datos sintéticos de laboratorio, sin mover hardware. |
+| `GET /operators` | Operators, current profile and last application acknowledgement |
+| `GET /profile-rules/table-height` | Provisional factor, version and stature limits |
+| `POST /operators` | Create operator/initial profile; return IDs and revision |
+| `PUT /operator-profiles/{id}` | New revision using `expected_revision` or If-Match; conflict `412` |
+| `GET /operator-profiles/{id}/revisions` | Profile history |
+| `DELETE /operators/{id}` | Administrator: remove operator and request associated-data purge |
+| `GET /cells` | Cells and session assignment |
+| `GET /cells/{id}/desired-profile` | Desired configuration with ETag |
+| `GET /cells/{id}/summary` | Time distribution, mean angles, coverage and preliminary signal |
+| `GET /sessions` | Filters: operator/study/from_date/to_date; limit up to 500 |
+| `POST /sessions`, `POST /sessions/{id}/close` | Start/close a session |
+| `DELETE /sessions/{id}` | Hide immediately and purge asynchronously |
+| `GET /sessions/{id}/timeline` | Latest 600 samples by default; max 2,000, `before` pagination |
+| `GET /sessions/{id}/export.csv` | All session results |
+| `POST /ingest` | One message |
+| `POST /ingest/batches` | `batch_id` and 1–100 messages; per-message status |
+| `POST /studies`, `GET /studies` | Create/list studies |
+| `GET /studies/{id}/frames` | Administrator image metadata |
+| `DELETE /studies/{id}` | Administrator study/session deletion |
+| `PUT /frames/{frame_id}` | JPEG upload, max 8 MiB, after metadata |
+| `GET /frames/{frame_id}` | Administrator retained study original |
+| `GET /assessments` | Questionnaire responses; optional session filter |
+| `GET /alerts`, `POST /alerts/{id}/acknowledge` | Historical observations and review acknowledgement |
+| `GET /context`, `PUT /context` | Versioned ergonomic context and provenance |
+| `GET /stats`, `GET /system` | Summary and administrative diagnostics |
+| `POST /demo` | Administrator synthetic laboratory data; no hardware movement |
 
-## Estatura y altura de mesa
+## Stature and table height
 
-La interfaz pide **estatura en cm** al crear un operario; la API usa metros. Ejemplo mínimo de configuración (añadir `display_name` y `presentation_pose`):
+The browser requests stature in centimetres; the API uses metres. Alongside `display_name` and `presentation_pose`, an automatic profile can specify:
 
 ```json
 {"stature_m":1.75,"table_height_mode":"automatic"}
 ```
 
-El servidor calcula `table_height_m = round(stature_m × 0.60, 3)` (**1,05 m** en el ejemplo) y guarda `table_height_rule: "stature-ratio-v1"`. Es una regla provisional del proyecto, no una recomendación ergonómica validada. El factor y los límites están centralizados en `backend/profile_height.py`. Se acepta estatura de 1–2,3 m y mesa de 0,2–2 m; ROS sigue validando los límites reales y aplicando la revisión en `next_safe_state`.
+The server computes `table_height_m = round(stature_m × 0.60, 3)` (1.05 m here), recording `table_height_rule:"stature-ratio-v1"`. This is a provisional project rule, not a validated ergonomic prescription. Factor/bounds are in `backend/profile_height.py`: stature 1–2.3 m, table 0.2–2 m. ROS still validates hardware limits and applies the revision at `next_safe_state`.
 
-En modo automático, la altura enviada por el cliente se ignora y se recalcula en cada revisión. Para ajustar manualmente: `table_height_mode: "manual"` y `table_height_m`; se conserva la estatura y `table_height_rule` pasa a `null`. Cambiar la estatura manteniendo el modo manual no altera la mesa. Las revisiones históricas no se modifican.
+Automatic mode ignores supplied table height and recalculates at each revision. Manual mode uses `table_height_mode:"manual"` and `table_height_m`, preserves stature and sets the rule to null. Changing stature in manual mode does not move the target height. History remains unchanged.
 
-Compatibilidad: los campos nuevos son opcionales en el contrato. Un cliente antiguo que envíe `table_height_m` sin indicar modo se interpreta como ajuste **manual**, conservando la estatura conocida; no se inventa la estatura de perfiles existentes. Si no se envían ni modo ni altura explícita, se mantiene el modo vigente; en perfiles nuevos con estatura se usa automático. `PUT` conserva la concurrencia mediante `expected_revision`/`If-Match` y requiere la pose como antes.
+Compatibility: an explicit height without mode means manual, preserving known stature. Omitted mode/height retains the current mode; a new profile with stature defaults to automatic. Existing profiles are not assigned invented stature. Updates still require the pose and concurrency revision.
 
-## Laboratorio de visión (administradores)
+Profile acknowledgement `applied` means adopted by local ROS logic, not proof the robot/table physically reached the target. Telemetry/events provide that observation.
 
-Todas las rutas de `/vision` requieren cookie de administrador; el token de ROS y las cuentas de consulta no dan acceso a vídeos ni a su administración.
+## Vision endpoints
 
-| Método / ruta (bajo `/api/v1`) | Uso |
+In strict mode all `/vision` routes require an administrator cookie. ROS tokens/viewers cannot retrieve or administer laboratory videos.
+
+| Method/path | Purpose |
 | --- | --- |
-| `GET /vision/status` | Salud real del trabajador, CUDA/modelos, límites y URL HTTPS. |
-| `GET /vision/certificate` | Raíz TLS pública para instalar en el cliente. |
-| `GET /vision/files?root=examples&path=videos&recursive=false` | Vídeos/carpetas bajo `examples` o `root=project` para la raíz POSTURE; excluye carpetas privadas. |
-| `POST /vision/import` | `{root:"examples",path:"videos/clip.mp4"}`; referencia al archivo del servidor. |
-| `GET /vision/assets` | Biblioteca de originales y subidas incompletas. |
-| `POST /vision/uploads` | `{name,size_bytes?,capture?}`; crea una subida y devuelve `asset_id`. No inicia inferencia. |
-| `PUT /vision/uploads/{asset_id}?offset=0` | Cuerpo binario por bloques de hasta 8 MiB; desplazamiento exacto, máximo total 2 GiB. |
-| `POST /vision/uploads/{asset_id}/complete` | Confirma la longitud y cierra la subida. |
-| `DELETE /vision/assets/{asset_id}` | Borra los análisis asociados y el original si era una subida; exige trabajos terminados/cancelados. No elimina archivos de examples. |
-| `POST /vision/jobs` | `{asset_id,name?,operator_id?,sample_fps:5,confidence:0.5,mode:"file"}`. Cada trabajo tiene sesión/estudio y contexto propios. |
-| `GET /vision/jobs` / `GET /vision/jobs/{id}` | Listado y progreso, configuración y resumen. |
-| `POST /vision/jobs/{id}/cancel` | Solicita cancelación conservando resultados parciales. |
-| `DELETE /vision/jobs/{id}` | Retirada de análisis/sesión/estudio; mantiene el original. |
-| `PUT /vision/jobs/{id}/frames/{sequence}?offset_s=0.2` | Solo en modo `live`: JPEG 1920×1080, hasta 8 MiB. Cola limitada, respuesta 429 si tiene 15 capturas pendientes. |
-| `POST /vision/jobs/{id}/finish` | Termina captura `live` cuando el original ya está guardado. |
-| `GET /vision/jobs/{id}/results?after=-1&limit=5000` | Muestras ordenadas por desplazamiento, paginación incremental; hasta 20.000 por petición. |
-| `GET /vision/jobs/{id}/video?format=mp4` | MP4 de reproducción; `format=webm` para VP9. Ambos admiten Range. |
-| `GET /vision/jobs/{id}/original` | Descarga del original. |
-| `GET /vision/jobs/{id}/export.csv` / `export.json` | Resultados completos; JSON conserva puntos nativos, métricas y contexto. |
+| `GET /vision/status` | Worker/CUDA/models, limits and HTTPS URL |
+| `GET /vision/certificate` | Public TLS root |
+| `GET /vision/files?root=examples&path=videos&recursive=false` | Read-only import listing; `root=project` selects the repository root |
+| `POST /vision/import` | `{root:"examples",path:"videos/clip.mp4"}` |
+| `GET /vision/assets` | Original library and incomplete uploads |
+| `POST /vision/uploads` | `{name,size_bytes?,capture?}`; creates asset, not inference |
+| `PUT /vision/uploads/{id}?offset=0` | Binary blocks up to 8 MiB; max total 2 GiB |
+| `POST /vision/uploads/{id}/complete` | Verify length and complete transfer |
+| `DELETE /vision/assets/{id}` | Delete associated analyses and uploaded original; jobs must stop first; imported files stay |
+| `POST /vision/jobs` | `{asset_id,name?,operator_id?,sample_fps:5,confidence:0.5,mode:"file"}` |
+| `GET /vision/jobs`, `GET /vision/jobs/{id}` | Progress, settings and summary |
+| `POST /vision/jobs/{id}/cancel` | Cancel, preserving partial results |
+| `DELETE /vision/jobs/{id}` | Remove analysis/session/study; preserve original |
+| `PUT /vision/jobs/{id}/frames/{sequence}?offset_s=0.2` | Live JPEG 1920×1080, max 8 MiB; `429` at 15 pending frames |
+| `POST /vision/jobs/{id}/finish` | End live capture after original is stored |
+| `GET /vision/jobs/{id}/results?after=-1&limit=5000` | Ordered incremental samples; max 20,000 |
+| `GET /vision/jobs/{id}/video?format=mp4` | Playback MP4 or `format=webm`; Range support |
+| `GET /vision/jobs/{id}/original` | Original download |
+| `GET /vision/jobs/{id}/export.csv`, `export.json` | Full results; JSON retains native joints and context |
 
-Para una cámara en directo se abre primero una subida de tamaño desconocido, se crea el trabajo con `mode:"live"` y se envían vídeo por bloques y JPEG por separado. Al detener, se espera el último bloque/captura, se completa la subida y se llama a `finish`. Los tiempos son relativos al inicio de la grabación. Puede indicarse `capture_fps` negociado por el dispositivo.
+Live camera: create an unknown-size upload, create a `mode:"live"` job, send binary recording blocks and JPEGs separately. After stopping, wait for the final transfers, complete the upload and call `finish`. Frame offsets are relative to recording start. Optional `capture_fps` records negotiated device FPS.
 
-Para guardar sin analizar, enviar `capture: {mode:"manual", analysis_options:{name,operator_id,sample_fps,confidence,capture_fps}}` al abrir la subida; completar el vídeo y **no crear ningún trabajo**. Se guarda la intención y los parámetros, no una tarea pendiente en la GPU. `GET /vision/assets` conserva estos metadatos entre sesiones. Cuando el administrador decida procesar, `POST /vision/jobs` con `asset_id` hereda esas opciones; los parámetros explícitos de la petición tienen prioridad. `analysis_requested_at` marca los originales que ya han tenido una solicitud de análisis. Los otros modos de captura (`record`, `live`) documentan la intención; la interfaz inicia el trabajo al terminar o durante la captura, respectivamente. `/complete` nunca inicia análisis por sí solo.
+Manual capture: create an upload with `capture:{mode:"manual",analysis_options:{name,operator_id,sample_fps,confidence,capture_fps}}`, complete the recording and create no job. This persists options, not a queued GPU task. Later `POST /vision/jobs` with `asset_id` inherits them unless overridden. `analysis_requested_at` identifies previously requested assets. `record` and `live` capture modes document after-capture and concurrent processing intent; the browser creates jobs accordingly. Upload completion alone never starts inference.
 
-Los clips offline admiten otras frecuencias además de 25 fps. El contrato ROS existente conserva 1920×1080 y ahora permite `frame.capture_fps` entre >0 y 240; los valores actuales de 25 siguen siendo válidos.
+Files can have other FPS values. The legacy normalised-frame contract retains 1920×1080 and permits `frame.capture_fps` greater than zero and at most 240.
 
-## Perfiles (detalle)
+## Persistence and errors
 
-Alta: cuerpo con `display_name`, `cell_id` opcional, `presentation_pose` y configuración de mesa: `stature_m`/`table_height_mode: "automatic"`, o `table_height_m` para ajuste manual. La API asigna IDs/revisión. Los campos de perfil devuelto siguen el esquema `operator-profile.schema.json`.
+| Status | Meaning |
+| --- | --- |
+| `202` | Durably stored; downstream work may remain |
+| `200 duplicate` | Same identity/content already received |
+| `409` | Incompatible identity/sequence/image reuse |
+| `412` | Concurrent profile/context edit |
+| `422` | Invalid contract, coordinates, references or factors |
+| `401/403` | Authentication/permission failure |
+| `413` | Size limit exceeded |
 
-Edición: mismos valores y `expected_revision` actual. Alternativamente `If-Match: "profile-id:revision"`. La API crea una revisión; no acepta elegir arbitrariamente su número. `table_height_m` es altura de superficie respecto al suelo.
+JSON requests are limited to 2 MiB and individual messages to 256 KiB. Workers retry downstream processing; diagnostics expose failures. Late messages cannot recreate a deleted session.
 
-La confirmación `applied` representa la configuración adoptada por la lógica ROS. No declara que el robot haya terminado de moverse o que la mesa haya llegado a la altura: eso se observa con telemetría y eventos.
-
-## Persistencia y errores
-
-- `202 accepted`: original guardado de forma duradera; otros pasos pendientes.
-- `200 duplicate`: misma identidad y contenido ya recibidos.
-- `409`: identidad, secuencia o imagen reutilizadas de forma incompatible.
-- `412`: perfil/contexto editado concurrentemente.
-- `422`: contrato, coordenadas, referencia o factores inválidos.
-- `401/403`: autenticación/permiso.
-- `413`: límites de tamaño.
-
-El límite global de JSON es 2 MiB por petición y 256 KiB por mensaje. La API conserva originales; el trabajador realiza las etapas restantes con reintentos. Las incidencias permanecen consultables en Sistema. Los mensajes sobre una sesión eliminada no vuelven a crear sus datos.
-
-Para pruebas con la configuración de ejemplo: crear IDs reales de operario/estudio/sesión y sustituirlos antes de enviar `examples/telemetry.json`. Si no hay estudio, `study_id` es nulo y `frame.retention_mode` es `transient`. Puntos no disponibles se envían como `missing` con coordenadas nulas.
+Fixtures use synthetic identities. Create real operator/study/session IDs and update references before using them. Without a study, `study_id` is null and image retention is `transient`. Missing joints use `missing` with null coordinates.
