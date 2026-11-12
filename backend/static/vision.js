@@ -215,10 +215,11 @@ function visionCameraFailure(error){
 function visionDetail(job){
   if(!job)return `<section class='panel vision-empty-result'>${empty('Ver el movimiento, entender la postura','Selecciona un análisis o crea una prueba para explorar aquí sus resultados.')}</section>`;
   const id=encodeURIComponent(job.job_id);
+  const videoSource=job.preview_path?visionVideoUrl(job):job.mode==='file'?'/api/v1/vision/jobs/'+id+'/source-video':null;
   return `<section class='panel vision-result'><div class='panel-head'><div><h2>${esc(job.name)}</h2><p id='vision-job-stage'>${esc(job.stage)}</p></div><div class='actions'><button class='btn small' id='vision-reprocess'>Volver a analizar</button><button class='btn small danger' id='vision-delete-job'>Eliminar análisis</button></div></div>
   <div class='vision-job-state'><span id='vision-job-state'>${chip(visionStatus[job.status]||job.status,job.status==='failed'?'red':'outline')}</span><progress id='vision-job-progress' max='1' value='${job.progress||0}' aria-label='Progreso del análisis'></progress><span id='vision-job-count'>${number(job.processed_frames)} frames</span><button class='btn small' id='vision-cancel-job' ${visionActive(job)?'':'hidden'}>Cancelar</button></div>
   <p id='vision-job-error' class='vision-error' role='alert'>${esc(job.error||'')}</p>
-  <div class='vision-player'><video id='vision-result-video' ${job.preview_path?`src='${visionVideoUrl(job)}'`:''} controls playsinline preload='metadata' aria-label='Vídeo de estudio sincronizado con la pose' ${job.preview_path?'':'hidden'}></video><img id='vision-result-frame' alt='Último fotograma analizado' hidden><div id='vision-video-placeholder' ${job.preview_path?'hidden':''}>${icon('studies')}<p>${job.mode==='live'?'Los fotogramas analizados aparecerán aquí.':'La reproducción estará disponible al terminar el análisis.'}</p></div><canvas id='vision-overlay' aria-label='Esqueleto inferido sobre el fotograma'></canvas></div>
+  <div class='vision-player'><video id='vision-result-video' ${videoSource?`src='${videoSource}'`:''} controls playsinline preload='metadata' aria-label='Vídeo de estudio sincronizado con la pose' ${videoSource?'':'hidden'}></video><img id='vision-result-frame' alt='Último fotograma analizado' hidden><div id='vision-video-placeholder' ${videoSource?'hidden':''}>${icon('studies')}<p>${job.mode==='live'?'Los fotogramas analizados aparecerán aquí.':'La reproducción estará disponible al terminar el análisis.'}</p></div><canvas id='vision-overlay' aria-label='Esqueleto inferido sobre el fotograma'></canvas></div>
   <div class='vision-player-meta'><span id='vision-frame-position'>Sin fotograma</span><label><input id='vision-show-pose' type='checkbox' checked> Mostrar esqueleto</label><label>Suavizado de ángulos<select id='vision-angle-window' title='Media móvil de las muestras disponibles. Solo cambia la visualización; las métricas originales se conservan.'>${[[0,'Sin suavizado'],[.5,'Media móvil · 0,5 s'],[1,'Media móvil · 1 s'],[2,'Media móvil · 2 s']].map(([seconds,label])=>`<option value='${seconds}' ${visionState.angleWindowS===seconds?'selected':''}>${label}</option>`).join('')}</select></label></div>
   <div id='vision-frame-metrics'>${visionMetricsLayout()}</div><div id='vision-summary' class='vision-summary'></div>
   <div class='vision-chart'><div class='legend'><span><i></i>RULA</span><span><i class='orange'></i>REBA</span></div><div id='vision-score-chart'></div></div>
@@ -232,11 +233,11 @@ function visionPlot(){
   function line(key,color){let segments=[],part=[];samples.filter((_,i)=>i%step===0||i===samples.length-1).forEach(s=>{const v=s.metrics[key];if(v==null){if(part.length)segments.push(part.join(' '));part=[];}else part.push(`${x(s.offset_s).toFixed(2)},${y(v).toFixed(2)}`);});if(part.length)segments.push(part.join(' '));return segments.map(p=>`<polyline points='${p}' fill='none' stroke='${color}' stroke-width='2'/>`).join('');}
   return `<svg class='chart' viewBox='0 0 700 175' role='img' aria-label='RULA y REBA a lo largo del vídeo'>${[0,5,10,15].map(v=>`<path d='M35 ${y(v)}H680' stroke='#e1e7e2'/><text x='8' y='${y(v)+4}'>${v}</text>`).join('')}${line('rula','#1d6c5c')}${line('reba','#d7a05a')}<text x='35' y='168'>0 s</text><text x='625' y='168'>${number(end,1)} s</text></svg>`;
 }
-function visionDraw(row){
-  const canvas=$('#vision-overlay');if(!canvas)return;
+function visionDraw(row,canvas=$('#vision-overlay'),confidence){
+  if(!canvas)return;
   canvas.width=1920;canvas.height=1080;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,1920,1080);
   if(!row||!$('#vision-show-pose')?.checked)return;
-  const p=row.keypoints,s=row.scores,cut=visionState.jobs.find(j=>j.job_id===visionState.selected)?.options.confidence||.5;
+  const p=row.keypoints,s=row.scores,cut=confidence??(visionState.jobs.find(j=>j.job_id===visionState.selected)?.options.confidence||.5);
   const edges=[[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16],[15,17],[15,19],[16,20],[16,22]];
   for(const base of [91,112])for(let finger=0;finger<5;finger++){edges.push([base,base+1+finger*4]);for(let j=0;j<3;j++)edges.push([base+1+finger*4+j,base+2+finger*4+j]);}
   ctx.lineCap='round';ctx.lineJoin='round';
@@ -336,7 +337,7 @@ async function visionRefresh(){
     $('#vision-summary').innerHTML=`<div><strong>${number(job.processed_frames)}</strong><span>Frames analizados</span></div><div><strong>${job.processed_frames?number(job.evaluable_frames/job.processed_frames*100):'—'} %</strong><span>Frames evaluables</span></div><div><strong>${job.summary?.rula_max??'—'} / ${job.summary?.reba_max??'—'}</strong><span>Máximos RULA / REBA</span></div>`;
     if(response.samples.length||!$('#vision-score-chart').innerHTML)$('#vision-score-chart').innerHTML=visionPlot();
     const video=$('#vision-result-video'),frame=$('#vision-result-frame');
-    if(job.preview_path){if(video.hidden){video.src=visionVideoUrl(job);video.hidden=false;}frame.hidden=true;$('#vision-video-placeholder').hidden=true;
+    if(job.preview_path||job.mode==='file'){if(video.hidden){video.src=job.preview_path?visionVideoUrl(job):'/api/v1/vision/jobs/'+encodeURIComponent(job.job_id)+'/source-video';video.hidden=false;}frame.hidden=true;$('#vision-video-placeholder').hidden=true;
       if(video.paused)visionVideoTime();
     }else{
       const latest=visionState.samples.at(-1);

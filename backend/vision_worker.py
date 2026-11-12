@@ -221,14 +221,22 @@ def process_file(engine,job):
     try:
         fps = capture.get(cv2.CAP_PROP_FPS)
         total = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-        if not capture.isOpened() or not math.isfinite(fps) or fps<=0 or fps>240:
-            raise RuntimeError('No se puede decodificar el vídeo o su frecuencia no es válida.')
+        if not capture.isOpened():
+            raise RuntimeError('No se puede abrir el vídeo para decodificarlo.')
+        declared_fps=fps
+        # Browser WebM may advertise a 1000 Hz time base as nominal FPS. Actual
+        # presentation timestamps remain usable and define sampling/timing.
+        if not math.isfinite(fps) or fps<=0 or fps>240:
+            fallback=job.get('source_fps',25)
+            fps=fallback if isinstance(fallback,(int,float)) and math.isfinite(fallback) and 0<fallback<=240 else 25
+        update(job['job_id'],source_declared_fps=declared_fps if math.isfinite(declared_fps) else None,
+            source_fps_fallback=(fps!=declared_fps))
         job.update(source_fps=fps)
         update(job['job_id'],duration_s=None,source_fps=fps,source_width=int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             source_height=int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),normalization='letterbox_1920x1080',
             stage='Detectando cuerpo y manos',model_manifest=engine.manifest,provider='CUDAExecutionProvider',
             timing_version=TIMING_VERSION,timestamp_source='decoder_presentation_timestamp')
-        effective_fps = min(fps,job['options']['sample_fps'])
+        effective_fps = job['options']['sample_fps']
         clock = PresentationClock(effective_fps)
         index,sequence,last_offset = 0,0,0.
         while True:

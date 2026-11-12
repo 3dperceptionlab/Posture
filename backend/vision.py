@@ -233,6 +233,28 @@ def job_detail(jid:str,request:Request):
     return clean(get_job(jid))
 
 
+@router.get('/jobs/{jid}/cameras',summary='Find both cameras in a paired capture')
+def cameras(jid:str,request:Request):
+    auth.admin(request);job=get_job(jid);asset=get_asset(job['asset_id'])
+    group=asset.get('capture',{}).get('group_id')
+    if not group:return {'group_id':None,'cameras':[]}
+    rows=[]
+    for original in db.vision_assets.find({'capture.group_id':group,'deleted':{'$ne':True}}).sort('capture.camera_index',1):
+        related=db.vision_jobs.find_one({'asset_id':original['asset_id'],'deleted':{'$ne':True}},sort=[('created_at',-1)])
+        if original['asset_id']==job['asset_id']:related=job
+        if related:rows.append({'camera_index':original['capture']['camera_index'],'job':clean(related)})
+    return {'group_id':group,'cameras':rows}
+
+
+@router.get('/jobs/{jid}/source-video',summary='Play a retained original before analysis is ready')
+def source_video(jid:str,request:Request):
+    auth.admin(request);asset=get_asset(get_job(jid)['asset_id'])
+    if asset['status']!='ready':raise HTTPException(409,'La grabación aún no está completa.')
+    import mimetypes
+    file=asset_path(asset)
+    return FileResponse(file,media_type=mimetypes.guess_type(file.name)[0] or 'application/octet-stream')
+
+
 @router.post('/jobs/{jid}/cancel')
 def cancel(jid:str,request:Request):
     auth.admin(request)

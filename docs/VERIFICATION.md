@@ -177,6 +177,25 @@ Tool: `scripts/browser_dual_camera_qa.cjs`; private report and mobile screenshot
 `.runtime/dual-camera-qa/`. This verifies software coordination, not hardware
 frame synchronisation or bandwidth of two physical USB devices on the client.
 
+## Paired playback and browser WebM metadata — 12 November 2026
+
+Reviewed failed paired recordings with zero processed frames. Their original
+files decoded successfully but advertised 1000 nominal FPS; the former metadata
+range check rejected them before inference. The worker now retains that declared
+value and samples by presentation timestamps without imposing that range check
+on otherwise decodable videos. Five affected jobs were requeued in place with
+recovery history; original files and prior completed results were preserved.
+
+The requested two-camera trial's name/operator assignment was corrected across
+jobs, assets, sessions, studies, observation associations and archived records,
+with a metadata correction audit entry. Numerical metrics were not recalculated
+for the already completed camera.
+
+Chromium decoded both actual camera videos, played them together (approximately
+22 ms difference at the observation), paused both, switched the selected camera,
+and rendered a 390 px layout without overflow or JavaScript errors. Private
+evidence: `.runtime/paired-review-qa/`.
+
 ## Scope
 
 Software checks do not establish clinical/occupational validity, calibration, physical camera operation, target-device performance or scientific superiority of an estimator. Synthetic fixtures are labelled accordingly. New deployments must validate their own hardware, task context and field measurements.

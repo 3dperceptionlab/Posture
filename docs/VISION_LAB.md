@@ -50,6 +50,17 @@ permission. Actual simultaneous USB bandwidth must be checked on the client.
 
 ## Results and deletion
 
+Paired capture analyses display both cameras together. Use the selected video's
+controls for joint playback/pause/seeking, and **View camera metrics** to choose
+which camera supplies the angle/score readout. Each overlay uses its own camera's
+sample timestamps and confidence. Available originals can be played before
+analysis finishes; the second view switches to its normalised preview when ready.
+
+Some browser WebM files advertise a nominal 1000 FPS time base despite ordinary
+frame intervals. This metadata is not treated as a decoding failure. Sampling
+follows actual presentation timestamps at the requested analysis rate; declared
+FPS and any fallback are recorded separately. Original files are not rewritten.
+
 - Queue/progress, cancellation, errors and reanalysis with new settings.
 - Silent MP4/H.264 and WebM/VP9 playback, chosen by browser codec support; pose overlay, angles and per-sample RULA/REBA.
 - Timeline, evaluable frame counts and maxima. Mean ordinal scores are not converted into a risk category.
