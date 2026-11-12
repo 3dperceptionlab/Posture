@@ -80,6 +80,17 @@ services:
       timeout: 5s
       start_period: 180s
       retries: 3
+  exports:
+    <<: *app
+    image: posture-vision:0.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.vision
+    command: [python, -m, backend.vision_exports]
+    healthcheck:
+      disable: true
+    mem_limit: 2g
+    cpus: 4
   https:
     image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     environment:

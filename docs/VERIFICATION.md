@@ -122,6 +122,44 @@ translated at source and the strict-mode reference regenerated.
 Evidence: `.runtime/public-docs-check.log`, `.runtime/public-docs-auth-tests.log`,
 `.runtime/public-docs-browser.log`, `.runtime/public-docs-caddy-example.log`.
 
+## Laboratory ZIP export — 11 November 2026
+
+Added an administrator export queue, CPU-only `exports` service and laboratory
+dashboard controls. Source videos/analyses are read without repeating inference.
+
+- Five unit tests cover variable-rate frame selection, no future poses, clearing
+  missing detections, complete metric columns, safe archive folder names and
+  strict anonymous/viewer denial.
+- A synthetic variable-frame-rate render preserved every frame timestamp and
+  verified overlay pixels before/after each sample, including a missing detection.
+- A real single-run ZIP passed integrity checks: the original SHA-256 matched,
+  CSV/JSON contained all 143 samples, and all 711 skeleton-video timestamps matched
+  the source preview. HTTP Range download, active-request deduplication and ZIP
+  deletion without source-run deletion passed.
+- Browser checks created a full 19-run export using the button, preserved progress
+  after reload, and found no JavaScript errors or horizontal overflow at 390 px.
+  The full export continues independently in the worker; this check did not wait
+  for all 19 runs to finish.
+
+Evidence: `.runtime/vision-exports-qa/unit.log`, `timing.log`, `archive.log`,
+`browser.log`, and desktop/mobile captures in the same private directory.
+
+## Stable angle layout and display smoothing — 11 November 2026
+
+The vision laboratory retains all four angle cells across missing detections,
+showing em dashes for unavailable measurements. Display-only causal smoothing
+defaults to a one-second window, with raw/0.5-second/two-second alternatives.
+
+Browser verification at 1440 px and 390 px checked 20 repeated dropouts per
+viewport: the same cell nodes and layout dimensions were retained. Fixtures
+verified the trailing mean, future-sample exclusion, long-gap expiry, missing
+joint handling and unchanged source metrics. The selector worked and a seek in
+a real variable-rate clip retained a non-future pose. No JavaScript errors or
+mobile overflow were observed. Stored results and exports were not rewritten.
+
+Tool: `scripts/browser_angle_smoothing_qa.cjs`. Private report/screenshots:
+`.runtime/angle-smoothing-qa/`. API rebuilt/deployed and HTTPS health verified.
+
 ## Scope
 
 Software checks do not establish clinical/occupational validity, calibration, physical camera operation, target-device performance or scientific superiority of an estimator. Synthetic fixtures are labelled accordingly. New deployments must validate their own hardware, task context and field measurements.

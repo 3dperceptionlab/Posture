@@ -109,6 +109,7 @@ See [ROS authentication](docs/ROS_API.md#authentication). Credentials, runtime d
 | `api` | FastAPI, authentication, acquisition and static dashboard | MongoDB and media volume |
 | `worker` | CPU metrics, archival, publication/retries and deletion | Durable MongoDB state |
 | `vision` | Optional CUDA YOLOX/RTMW inference and video jobs | MongoDB, media and `data/vision/` |
+| `exports` | CPU rendering of stored skeletons and background ZIP exports | MongoDB queue and `data/vision/exports/` |
 | `https` | Caddy and local TLS certificates | `caddy_data`, `caddy_config` volumes |
 | `mongo` | Application database and separate broker databases | `mongo` volume |
 | `orion` | Orion-LD 1.12.0, NGSI-LD context | MongoDB |

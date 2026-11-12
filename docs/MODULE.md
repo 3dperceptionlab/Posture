@@ -76,6 +76,9 @@ docker compose up -d --no-build api
 - CrateDB archives original JSON in `posture_raw` and `posture_real_raw`; the latter includes shift/iteration IDs. QuantumLeap owns separate time-series tables.
 - Orion-LD maintains recent context; late observations remain in history without replacing newer context.
 - JPEGs use the media volume. Uploaded videos/derivatives use `data/vision/` by default.
+- The CPU-only `exports` service renders stored poses and prepares ZIP exports in
+  `data/vision/exports/`. These independent archive copies remain until explicitly
+  removed from the laboratory export panel, even if a source run is later deleted.
 - `examples/` and the project directory are read-only import roots, excluding private directories and path escapes.
 - Caddy CA material is persistent. Only its public root is distributed to clients.
 

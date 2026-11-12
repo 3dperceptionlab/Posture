@@ -45,6 +45,43 @@ Laboratory originals/frames/results use administrator vision endpoints. Session 
 
 Deleting an analysis removes its session, results, frames and previews but keeps the original video. Deleting an uploaded video also removes its analyses/original; jobs must finish or be cancelled first. Imported source files stay on disk. Historical purge completes asynchronously.
 
+## Export all laboratory runs
+
+Open the **Run exports** panel in the vision laboratory and choose **Export all**
+(Spanish interface: **Exportar todas**). A background worker prepares one ZIP;
+progress survives page navigation/reload. Download it when **Download ZIP**
+appears. Export preparation uses stored landmarks, not a new inference run.
+
+Every finished laboratory run is included, beyond the dashboard's 100-run list
+limit. Active captures/analyses are excluded and listed in the manifest. Failed
+or cancelled runs are included with their available data and explicit warnings
+for unavailable files. Production iteration analyses are excluded.
+
+The archive contains `manifest.json`, a `runs.csv` index, and one uniquely named
+folder per run:
+
+- `original.<extension>`: the original recording, without modification.
+- `skeleton.mp4`: normalised video with body/hand landmarks drawn into the image,
+  using the analysis confidence threshold. This silent video preserves preview
+  presentation timestamps; a sample starts at the first actual frame at/after
+  its time. Missing detections clear the overlay. Existing analysis timing and
+  assumptions are retained, including those in older analyses.
+- `metrics.csv`: sequence/time columns and all available flattened metric
+  components/angles/provenance; arrays remain JSON values inside CSV cells.
+- `data.json`: complete run metadata, original landmarks/confidence, samples,
+  metrics and frozen task context.
+
+The CPU-only `exports` Compose service renders and packages exports independently
+of the inference worker. Requests are durable, one export runs at a time, and a
+worker restart retries its current export. Large ZIP files use ZIP64. The ZIP
+remains in private `data/vision/exports/` storage until **Delete ZIP** is used;
+this does not delete source videos or analyses. An export is an independent copy
+and is not automatically removed when its source run is later deleted.
+
+In strict mode creating, listing, downloading and deleting exports requires an
+administrator session. Development mode follows the module's existing anonymous
+administrator policy. API routes are documented in [API.md](API.md).
+
 ## Engine and provenance
 
 The `vision` service uses `Dockerfile.vision`, RTMLib **0.0.16**, **YOLOX-m**, **RTMW-x** (RTMPose family) and COCO-WholeBody **133 landmarks**. ONNX Runtime GPU **1.23.2** uses CUDA 12/cuDNN 9. Startup checks both sessions use `CUDAExecutionProvider` and runs warm-up; CUDA failure is reported rather than hidden behind CPU fallback.
@@ -64,6 +101,23 @@ For multiple people, the largest bounding box among sufficiently confident detec
 Results are preliminary 2D projections with explicit assumptions, particularly for diagonal views and partial framing. No measured depth, gravity calibration or SMPL is provided. Task context freezes per job.
 
 Displayed time is relative to the video. Analysis session dates describe when POSTURE started analysis/capture, not a claim about when an imported file was recorded.
+
+## Stable angle readout and display smoothing
+
+The trunk, neck and left/right elbow fields stay in place when detection fails;
+missing current measurements display an em dash rather than removing the row.
+The angle selector defaults to a one-second trailing moving mean; raw values,
+0.5 seconds and two seconds are also available.
+
+Only finite, available measurements at or before the current sample are averaged.
+Each angle uses its own available samples. A missing current detection/joint
+still displays an em dash; old values are not presented as new measurements.
+The window follows video timestamps rather than wall-clock time, so seeking,
+pausing, variable FPS and replaying a different run do not carry over an old
+filter state. A gap longer than the selected window contributes no old values.
+
+This is display-only smoothing. Stored metrics, exports, pose coordinates and
+RULA/REBA scores remain unchanged; ordinal risk scores are not averaged.
 
 ## Temporal synchronisation: source-pts-v1
 

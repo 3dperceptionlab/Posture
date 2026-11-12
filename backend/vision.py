@@ -17,8 +17,38 @@ from . import auth
 from .store import db, now, uid, clean
 from .vision_common import (VISION, EXAMPLES, VIDEO_EXTENSIONS, MAX_VIDEO_BYTES, MAX_CHUNK_BYTES,
     TERMINAL, PRIVATE_PARTS, server_root, server_path, inside, get_asset, get_job, public_asset, asset_path, create_job, capture_settings)
+from .vision_export_common import request_export, public_export, get_export, export_path
 
 router = APIRouter(prefix='/api/v1/vision', tags=['Laboratorio de visión'])
+
+
+@router.post('/exports',status_code=202,summary='Queue a ZIP export of all finished laboratory runs')
+def new_export(request:Request):
+    return request_export(auth.admin(request))
+
+
+@router.get('/exports',summary='List laboratory export progress and downloads')
+def exports(request:Request):
+    auth.admin(request)
+    return [public_export(row) for row in db.vision_exports.find({'deleted':{'$ne':True}}).sort('created_at',-1).limit(20)]
+
+
+@router.get('/exports/{eid}/download',summary='Download a prepared laboratory ZIP: administrators only')
+def download_export(eid:str,request:Request):
+    auth.admin(request)
+    row=get_export(eid)
+    if row['status']!='completed':raise HTTPException(409,'El ZIP todavía no está preparado.')
+    file=export_path(row)
+    if not file.is_file():raise HTTPException(404,'El archivo de exportación no está disponible.')
+    return FileResponse(file,media_type='application/zip',filename='posture-vision-'+eid+'.zip')
+
+
+@router.delete('/exports/{eid}',status_code=202,summary='Cancel/remove an export without deleting original runs')
+def delete_export(eid:str,request:Request):
+    auth.admin(request);row=get_export(eid)
+    db.vision_exports.update_one({'_id':eid},{'$set':{'deleted':True,'active':False,'deleted_at':now()}})
+    export_path(row).unlink(missing_ok=True)
+    return {'status':'deleted'}
 
 
 @router.get('/status')

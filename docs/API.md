@@ -103,6 +103,10 @@ In strict mode all `/vision` routes require an administrator cookie. ROS tokens/
 | `GET /vision/jobs/{id}/video?format=mp4` | Playback MP4 or `format=webm`; Range support |
 | `GET /vision/jobs/{id}/original` | Original download |
 | `GET /vision/jobs/{id}/export.csv`, `export.json` | Full results; JSON retains native joints and context |
+| `POST /vision/exports` | Queue a ZIP of all finished laboratory runs; `202`, reuses an active export |
+| `GET /vision/exports` | Latest 20 export records with progress, warnings and size |
+| `GET /vision/exports/{id}/download` | Administrator ZIP download after completion; Range support |
+| `DELETE /vision/exports/{id}` | Cancel/remove a ZIP; preserve source runs and videos |
 
 Live camera: create an unknown-size upload, create a `mode:"live"` job, send binary recording blocks and JPEGs separately. After stopping, wait for the final transfers, complete the upload and call `finish`. Frame offsets are relative to recording start. Optional `capture_fps` records negotiated device FPS.
 
