@@ -33,6 +33,21 @@ Keep the tab open. Navigation is blocked while recording and closing the tab tri
 
 Reloading resets camera mode to capture-only; a single visit preserves the selected mode. Manual captures remain across reload/login and do not run pose inference. Storage/transfer still consume recording resources; the vision service keeps its models loaded/warmed.
 
+### Two USB cameras
+
+In the camera panel choose **Add second camera** (Spanish: **Añadir segunda
+cámara**). Open/select two different USB devices and check both previews.
+**Record both** starts two independent recordings in the same browser event
+turn; **Stop both and save** stops both before waiting for network transfers.
+This is coordinated software capture, not hardware frame synchronisation.
+
+Paired capture selects after-recording analysis by default: each original gets
+its own independent pose/metric job. The single GPU worker processes queued jobs
+in turn. Capture-only/manual mode is also available; live inference remains a
+single-camera option. A shared `capture.group_id`, camera index and paired names
+associate both originals. Both cameras require HTTPS/localhost and browser
+permission. Actual simultaneous USB bandwidth must be checked on the client.
+
 ## Results and deletion
 
 - Queue/progress, cancellation, errors and reanalysis with new settings.

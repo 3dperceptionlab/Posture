@@ -160,6 +160,23 @@ mobile overflow were observed. Stored results and exports were not rewritten.
 Tool: `scripts/browser_angle_smoothing_qa.cjs`. Private report/screenshots:
 `.runtime/angle-smoothing-qa/`. API rebuilt/deployed and HTTPS health verified.
 
+## Paired USB capture — 12 November 2026
+
+Checkpoint commit `021fac4` was created before the change. The browser can select
+two different camera devices and start/stop their independent recordings in one
+event turn. Paired originals retain a shared capture group and camera index.
+
+Chromium verification used two simulated camera streams drawn from a public
+MMPose clip, with distinct per-camera markers. Both recordings were saved and
+produced separate completed GPU analyses with sample results. Measured start
+delta was 0 ms and stop delta approximately 0.8 ms in this simulation. Dual manual
+capture produced no inference jobs; single-camera capture remained functional.
+No JavaScript errors or mobile overflow were observed. QA uploads were removed.
+
+Tool: `scripts/browser_dual_camera_qa.cjs`; private report and mobile screenshot:
+`.runtime/dual-camera-qa/`. This verifies software coordination, not hardware
+frame synchronisation or bandwidth of two physical USB devices on the client.
+
 ## Scope
 
 Software checks do not establish clinical/occupational validity, calibration, physical camera operation, target-device performance or scientific superiority of an estimator. Synthetic fixtures are labelled accordingly. New deployments must validate their own hardware, task context and field measurements.

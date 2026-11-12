@@ -124,7 +124,13 @@ def capture_settings(capture):
         if type(fps) not in (int, float) or not math.isfinite(fps) or not 0 < fps <= 240:
             raise HTTPException(422, 'Frecuencia de cámara inválida.')
         saved['capture_fps'] = fps
-    return {'mode': capture['mode'], 'analysis_options': saved}
+    result={'mode':capture['mode'],'analysis_options':saved}
+    if 'group_id' in capture:
+        group=capture['group_id'];index=capture.get('camera_index')
+        if not isinstance(group,str) or not 1<=len(group)<=128 or type(index)!=int or index not in (1,2):
+            raise HTTPException(422,'Grupo de captura o índice de cámara inválido.')
+        result.update(group_id=group,camera_index=index)
+    return result
 
 
 def create_job(asset, body, actor, context=None, association=None, job_id=None):
