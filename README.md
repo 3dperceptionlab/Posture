@@ -144,6 +144,7 @@ Reception is acknowledged after a journaled MongoDB write. Workers archive origi
 | [ROS client and fixtures](examples/ros/) | Python HTTP client and synthetic examples |
 | [Laboratory and legacy API](docs/API.md) | Sessions, profiles, telemetry and vision endpoints |
 | [Vision laboratory](docs/VISION_LAB.md) | Capture modes, GPU processing and playback |
+| [Laboratory comparisons](docs/LABORATORY_ANALYSIS.md) | Table heights, operator filters, score distributions and CSV |
 | [Camera and HTTPS](docs/CAMERA_HTTPS.md) | Local CA, browser trust and SSH |
 | [Ergonomic methods](docs/ERGONOMICS.md) | Scoring, provenance and limitations |
 | [Legacy contract](docs/LEGACY_ROS_CONTRACT.md) | Archived v0.1 conventions and design proposal |

@@ -5,13 +5,34 @@ Implementation: `backend/metrics.py`, version `posture-ergonomics-0.1.0`. The en
 Method references:
 
 - McAtamney and Corlett, 1993: [Cornell RULA worksheet](https://www.ergo.human.cornell.edu/Pub/AHquest/RULAworksheet.pdf).
-- Hignett and McAtamney, 2000: [Cornell REBA material](https://www.ergo.human.cornell.edu/Pub/AHquest/Cornell_REBA.pdf).
+- Hignett and McAtamney, 2000: [Cornell REBA material](https://ergo.human.cornell.edu/Pub/AHquest/Cornell_REBA.pdf).
 
 ## Provenance and task context
 
 Every result preserves algorithm version, context revision/full snapshot, capture/processing timestamps, angles, components, side, coverage and assumptions. Initial task settings are in `examples/task-context.provisional.json`; editing them affects future observations rather than overwriting results.
 
 The pilot example uses a participant-reported approximate 2 kg, 0.30×0.60 m workpiece. Standing, supports, coupling, wrist twist, repetition and per-phase effort are provisional. Deburring effort cannot be inferred from part mass. The 2 kg value is near a RULA load threshold; the engine does not round before selecting its branch. Reusers must configure task factors for their own study.
+
+### Supported workpiece and score sensitivity
+
+On 12 November 2026 the user confirmed that the table supports the workpiece
+during cutter finishing. New task contexts therefore exclude the part's mass
+from the sustained hand-load proxy in `manual_finishing` (proxy 0 kg, explicitly
+assumed). Transfer/placement retain their separate 2 kg proxy. Cutter force is
+still unmeasured: excluding supported weight does not establish zero exertion.
+
+The preceding context used 2 kg during all finishing frames and assumed repeated
+actions. Under RULA that adds a load adjustment plus muscle use to both posture
+groups; under REBA this mass adds no load adjustment. For one audited sample,
+the saved context produced RULA 6 / REBA 2, while excluding the load proxy produced
+RULA 3 / REBA 2. This is a context-sensitivity example, not comparable percentages
+of two scales or proof of a measured risk level. Scores must not be exchanged to
+make their relative magnitudes look similar.
+
+The running context change has its own revision/audit entry. Earlier analyses
+keep their frozen factors and numerical scores; use **Reanalyse** on each camera
+to generate results with the updated context while preserving originals. The
+operator association is retained when reanalysing.
 
 Phase events select the load proxy by observation time. Without events, the finishing context is used and recorded as an assumption. Late events do not silently recalculate existing results.
 

@@ -23,6 +23,9 @@ async function visionLoadPairedView(job,primary){
   video.src=other.preview_path?visionVideoUrl(other):'/api/v1/vision/jobs/'+encodeURIComponent(other.job_id)+'/source-video';
   panel.querySelector('button').onclick=async()=>{primary.pause();video.pause();visionState.selected=other.job_id;visionState.selectionKey=null;await visionRefresh();};
   let samples=[],timer,loading=false,presentedTime;
+  visionState.chartPrimaryIndex=current.camera_index;
+  visionState.chartPeer={selectedJobId:job.job_id,camera:companion.camera_index,samples};
+  visionRenderChart();
   function draw(){
     const time=presentedTime??video.currentTime;
     let low=0,high=samples.length;
@@ -38,6 +41,7 @@ async function visionLoadPairedView(job,primary){
       const data=await visionRequest('/jobs/'+encodeURIComponent(other.job_id)+'/results?after='+(samples.at(-1)?.offset_s??-1));
       if(!video.isConnected)return;
       other=data.job;samples.push(...data.samples);draw();
+      if(visionState.selected===job.job_id)visionRenderChart();
       if(other.preview_path&&video.getAttribute('src')!==visionVideoUrl(other)){
         presentedTime=undefined;video.src=visionVideoUrl(other);
       }

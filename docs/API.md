@@ -103,10 +103,17 @@ In strict mode all `/vision` routes require an administrator cookie. ROS tokens/
 | `GET /vision/jobs/{id}/video?format=mp4` | Playback MP4 or `format=webm`; Range support |
 | `GET /vision/jobs/{id}/original` | Original download |
 | `GET /vision/jobs/{id}/export.csv`, `export.json` | Full results; JSON retains native joints and context |
-| `POST /vision/exports` | Queue a ZIP of all finished laboratory runs; `202`, reuses an active export |
+| `GET /vision/export-candidates` | All retained terminal lab analyses available for selection, without the history list's 100-run limit |
+| `POST /vision/exports` | Queue a selected ZIP with `{"job_ids":["vision-…"]}`; omit body to export all. `202`; same active selection is reused, different active selection returns `409` |
 | `GET /vision/exports` | Latest 20 export records with progress, warnings and size |
 | `GET /vision/exports/{id}/download` | Administrator ZIP download after completion; Range support |
 | `DELETE /vision/exports/{id}` | Cancel/remove a ZIP; preserve source runs and videos |
+
+An explicit export selection must contain 1–5,000 analysis IDs. Duplicate IDs
+are exported once. An empty/invalid list returns `422`; unavailable, deleted,
+production or unfinished requested analyses return `409` without exporting a
+partial selection. Archives retain their snapshot of IDs after creation. All
+export routes use the existing administrator access policy.
 
 Live camera: create an unknown-size upload, create a `mode:"live"` job, send binary recording blocks and JPEGs separately. After stopping, wait for the final transfers, complete the upload and call `finish`. Frame offsets are relative to recording start. Optional `capture_fps` records negotiated device FPS.
 

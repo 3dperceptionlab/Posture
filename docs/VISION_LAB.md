@@ -71,15 +71,21 @@ Laboratory originals/frames/results use administrator vision endpoints. Session 
 
 Deleting an analysis removes its session, results, frames and previews but keeps the original video. Deleting an uploaded video also removes its analyses/original; jobs must finish or be cancelled first. Imported source files stay on disk. Historical purge completes asynchronously.
 
-## Export all laboratory runs
+## Export selected or all laboratory runs
 
-Open the **Run exports** panel in the vision laboratory and choose **Export all**
-(Spanish interface: **Exportar todas**). A background worker prepares one ZIP;
+Open the **Run exports** panel at the bottom of the vision laboratory. Check the
+desired runs and choose **Export selected** (Spanish interface:
+**Exportar seleccionadas**). Search by run name, operator, height or camera;
+**Seleccionar visibles** adds all search matches and **Limpiar selección** clears
+the selection. Each camera analysis has its own checkbox. Selections survive
+background refreshes and navigation within the dashboard. **Exportar todas**
+remains available to export everything. A background worker prepares one ZIP;
 progress survives page navigation/reload. Download it when **Download ZIP**
 appears. Export preparation uses stored landmarks, not a new inference run.
 
-Every finished laboratory run is included, beyond the dashboard's 100-run list
-limit. Active captures/analyses are excluded and listed in the manifest. Failed
+The selection includes all retained terminal laboratory runs, beyond the
+dashboard's 100-run history limit. Only selected analyses enter a selected ZIP.
+With **Exportar todas**, active captures/analyses are excluded and listed in the manifest. Failed
 or cancelled runs are included with their available data and explicit warnings
 for unavailable files. Production iteration analyses are excluded.
 
@@ -130,6 +136,29 @@ Displayed time is relative to the video. Analysis session dates describe when PO
 
 ## Stable angle readout and display smoothing
 
+The live readout uses a compact horizontal layout: RULA and REBA values with
+their score blocks, followed by a 2×2 trunk/neck/left-elbow/right-elbow grid.
+The cards use fixed method colours: sea green for RULA (maximum 7) and light
+brown for REBA (maximum 15). These colours identify the method and do not switch
+at a score threshold. Values remain linked to their original metric fields.
+Method limitations remain in the expandable context section rather than being
+repeated inside each compact score card.
+
+The time-series chart appears immediately below these values. Its clickable
+legend independently toggles **Video 1 RULA**, **Video 1 REBA**, **Video 2 RULA**
+and **Video 2 REBA** for paired captures. Camera numbers identify the physical
+capture channel and stay stable when selecting the other camera's metrics.
+Single-camera analyses show their available curves only. Curve visibility and
+angle smoothing are display settings; stored/exported scores are unchanged.
+
+A subtle vertical marker follows the presentation timestamp of the selected
+video's displayed frame. It updates during playback/seeking and remains at the
+current frame when paused, including when curves are hidden or pose is missing.
+
+A red recording indicator and elapsed `mm:ss` counter provide feedback during
+single or paired browser capture. The counter stops/hides when capture stops;
+uploads and processing can continue afterwards.
+
 The trunk, neck and left/right elbow fields stay in place when detection fails;
 missing current measurements display an em dash rather than removing the row.
 The angle selector defaults to a one-second trailing moving mean; raw values,
@@ -152,6 +181,18 @@ Camera videos may declare 29.97 FPS but contain about 25 frames/second at variab
 Sampling follows presentation-time intervals and skips empty intervals across pauses. MP4/WebM previews preserve source frame count/timing rather than forcing constant FPS. The browser follows `requestVideoFrameCallback.mediaTime` and does not select a future pose.
 
 At 5 FPS the latest available pose is held between samples, giving roughly 0.2-second steps without accumulating drift. Increase analysis FPS for smoother overlays. Older analyses are retained; reanalyse the original for the corrected clock.
+
+## Laboratory entry and devices
+
+For structured table-height annotations and comparisons by operator, camera or
+experiment condition, see [Laboratory analysis](LABORATORY_ANALYSIS.md).
+
+The laboratory opens on **Cámara USB** by default. Its compact header keeps the
+title and simulation/session/comparison actions together, followed by the GPU
+status and model. Adding a second camera prefers distinct devices whose labels
+contain `webcam` (case-insensitive); the preference is checked again after the
+browser grants camera permission and exposes labels. Device selectors still
+allow manual changes. If no matching device exists, available cameras are used.
 
 ## Optional public demonstration clip
 

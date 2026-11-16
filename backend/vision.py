@@ -12,19 +12,32 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from PIL import Image
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from . import auth
 from .store import db, now, uid, clean
 from .vision_common import (VISION, EXAMPLES, VIDEO_EXTENSIONS, MAX_VIDEO_BYTES, MAX_CHUNK_BYTES,
     TERMINAL, PRIVATE_PARTS, server_root, server_path, inside, get_asset, get_job, public_asset, asset_path, create_job, capture_settings)
-from .vision_export_common import request_export, public_export, get_export, export_path
+from .vision_export_common import request_export, public_export, get_export, export_path, export_candidates
 
 router = APIRouter(prefix='/api/v1/vision', tags=['Laboratorio de visión'])
 
 
-@router.post('/exports',status_code=202,summary='Queue a ZIP export of all finished laboratory runs')
-def new_export(request:Request):
-    return request_export(auth.admin(request))
+class ExportSelection(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    job_ids:list[StrictStr]|None=Field(default=None,min_length=1,max_length=5000,
+        description='Explicit laboratory analysis IDs. Omit the body to export all terminal analyses. Empty selections are rejected.')
+
+
+@router.post('/exports',status_code=202,summary='Queue a ZIP of selected or all finished laboratory runs')
+def new_export(request:Request,body:ExportSelection|None=None):
+    return request_export(auth.admin(request),body.job_ids if body else None)
+
+
+@router.get('/export-candidates',summary='List all retained terminal laboratory analyses available for ZIP selection')
+def available_exports(request:Request):
+    auth.admin(request)
+    return export_candidates()
 
 
 @router.get('/exports',summary='List laboratory export progress and downloads')
@@ -231,6 +244,17 @@ def new_job(request:Request,body:dict):
 def job_detail(jid:str,request:Request):
     auth.admin(request)
     return clean(get_job(jid))
+
+
+@router.patch('/jobs/{jid}/metadata',summary='Annotate laboratory table height in cm; null means unknown')
+def job_metadata(jid:str,request:Request,body:dict):
+    actor=auth.admin(request);job=get_job(jid)
+    if job.get('origin')=='real':
+        raise HTTPException(409,'Este endpoint solo anota análisis de laboratorio.')
+    if set(body)!={'table_height_cm'}:
+        raise HTTPException(422,'Envía únicamente table_height_cm (centímetros o null).')
+    from .vision_metadata import annotate_height
+    return clean(annotate_height(job,body['table_height_cm'],actor))
 
 
 @router.get('/jobs/{jid}/cameras',summary='Find both cameras in a paired capture')

@@ -39,6 +39,7 @@ async function render(){
       content=selectedView==='overview'?overview():sessionDetail();
     }else if(selectedView==='operators')content=operatorsPage();
     else if(selectedView==='vision')content=await visionPage();
+    else if(selectedView==='analysis')content=await visionAnalysisPage();
     else if(selectedView==='real')content=await realPage();
     else if(selectedView==='sessions')content=sessionsPage();
     else if(selectedView==='studies')content=studiesPage();

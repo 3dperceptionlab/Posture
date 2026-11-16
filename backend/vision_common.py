@@ -44,6 +44,8 @@ def initialize_vision():
         'name':'Laboratorio de visión', 'operator_id':None, 'session_id':None, 'created_at':now()}}, upsert=True)
     db.operators.update_one({'_id':UNASSIGNED}, {'$setOnInsert':{'operator_id':UNASSIGNED,
         'display_name':'Laboratorio · sin asignar', 'created_at':now(), 'laboratory':True}}, upsert=True)
+    from .vision_metadata import migrate_laboratory_metadata
+    migrate_laboratory_metadata()
 
 
 def inside(root, relative):
@@ -119,6 +121,9 @@ def capture_settings(capture):
     if oid is not None and (not isinstance(oid, str) or not 1 <= len(oid) <= 128):
         raise HTTPException(422, 'Operario inválido.')
     saved.update(name=name, operator_id=oid)
+    from .vision_metadata import height_value
+    if 'table_height_cm' in body:
+        saved['table_height_cm'] = height_value(body['table_height_cm'])
     if 'capture_fps' in body:
         fps = body['capture_fps']
         if type(fps) not in (int, float) or not math.isfinite(fps) or not 0 < fps <= 240:
@@ -153,9 +158,14 @@ def create_job(asset, body, actor, context=None, association=None, job_id=None):
     cell = association.get('cell_id', CELL_ID)
     parents = {k:v for k,v in association.items() if k in ('shift_id','iteration_id','origin')}
     name = str(body.get('name') or asset['name'])[:200]
+    from .vision_metadata import metadata
+    lab = metadata(name, body) if not parents else {}
+    name = lab.get('name', name)
     study_row = {'_id':study, **parents, 'study_id':study, 'name':('Pieza · ' if parents else 'Laboratorio · ')+name,
         'description':'Original de vídeo y pose inferida; acceso de administración.',
         'created_at':stamp, 'created_by':actor['username'], 'deleted':False, 'vision_job_id':jid}
+    if lab:
+        study_row['table_height_cm'] = lab['table_height_cm']
     db.studies.update_one({'_id':study},{'$setOnInsert':study_row},upsert=True)
     session_row = {'_id':sid, **parents, 'session_id':sid, 'operator_id':oid, 'cell_id':cell,
         'study_id':study, 'name':name, 'condition':'vision_laboratory', 'started_at':stamp,
@@ -163,9 +173,11 @@ def create_job(asset, body, actor, context=None, association=None, job_id=None):
         'deleted':False, 'source':'vision', 'vision_job_id':jid, 'time_basis':'relative_video'}
     if parents:
         session_row.update(condition='real_iteration_analysis',started_at=association['recording_started_at'])
+    elif lab:
+        session_row['table_height_cm'] = lab['table_height_cm']
     db.sessions.update_one({'_id':sid},{'$setOnInsert':session_row},upsert=True)
     job = {'_id':jid, **association, 'job_id':jid, 'asset_id':asset['asset_id'], 'session_id':sid,
-        'study_id':study, 'operator_id':oid, 'name':name, 'mode':'live' if live else 'file',
+        'study_id':study, 'operator_id':oid, 'name':name, **lab, 'mode':'live' if live else 'file',
         'status':'capturing' if live else 'queued', 'created_at':stamp, 'updated_at':stamp,
         'created_by':actor['username'], 'options':opts, 'context':context if context is not None else task_context(),
         'processed_frames':0, 'evaluable_frames':0, 'progress':0, 'duration_s':None,

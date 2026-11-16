@@ -784,6 +784,8 @@ def demo(request:Request):
 
 from .vision import router as vision_router
 app.include_router(vision_router)
+from .vision_analysis import router as vision_analysis_router
+app.include_router(vision_analysis_router)
 from .real import router as real_router
 app.include_router(real_router)
 

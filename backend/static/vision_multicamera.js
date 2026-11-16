@@ -8,6 +8,21 @@ function visionCloseSecondary(){
   visionState.secondaryStream?.getTracks().forEach(track=>track.stop());
   visionState.secondaryStream=null;
 }
+const visionIsWebcam=device=>/webcam/i.test(device.label||'');
+async function visionPrimaryDeviceOptions(){
+  if(!navigator.mediaDevices?.enumerateDevices)return;
+  const select=$('#vision-camera-device');if(!select)return;
+  let devices;
+  try{devices=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='videoinput');}
+  catch{return;}
+  if(!devices.length)return;
+  const saved=visionState.stream?.getVideoTracks()[0]?.getSettings().deviceId||visionState.primaryDeviceId;
+  const current=devices.find(device=>device.deviceId===saved);
+  const preferred=devices.find(visionIsWebcam);
+  const selected=visionState.preferWebcamPair?(current&&visionIsWebcam(current)?current:preferred||current):current||preferred;
+  select.innerHTML=devices.map((device,i)=>`<option value='${esc(device.deviceId)}'>${esc(device.label||'Cámara USB '+(i+1))}</option>`).join('');
+  if(selected)select.value=selected.deviceId;
+}
 function visionMultiButtons(busy=false){
   for(const id of ['vision-open-camera','vision-camera-device','vision-camera-device-2','vision-camera-mode','vision-add-camera'])if($('#'+id))$('#'+id).disabled=busy;
   const secure=window.isSecureContext&&!!navigator.mediaDevices?.getUserMedia;
@@ -21,10 +36,15 @@ async function visionSecondDeviceOptions(){
   const devices=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='videoinput'&&device.deviceId!==first);
   const saved=visionState.secondaryDeviceId;
   select.innerHTML=devices.map((device,i)=>`<option value='${esc(device.deviceId)}'>${esc(device.label||'Cámara '+(i+2))}</option>`).join('');
-  if(devices.some(device=>device.deviceId===saved))select.value=saved;
+  const preferred=devices.find(visionIsWebcam);
+  if(visionState.preferWebcamPair&&preferred)select.value=preferred.deviceId;
+  else if(devices.some(device=>device.deviceId===saved))select.value=saved;
+  else if(preferred)select.value=preferred.deviceId;
   return devices;
 }
 async function visionMultiSetup(){
+  if(!$('#vision-camera-video')||$('#vision-add-camera'))return;
+  await visionPrimaryDeviceOptions();
   if(!$('#vision-camera-video')||$('#vision-add-camera'))return;
   const first=$('#vision-camera-video').parentElement;
   const previews=document.createElement('div');previews.className='vision-camera-previews';
@@ -43,7 +63,7 @@ async function visionMultiSetup(){
   $('#vision-add-camera').onclick=async()=>{
     if(visionState.recording||visionState.saving)return;
     visionState.dualCamera=!visionState.dualCamera;
-    if(visionState.dualCamera){visionState.preDualMode=visionState.captureMode;visionState.captureMode='record';}
+    if(visionState.dualCamera){visionState.preDualMode=visionState.captureMode;visionState.captureMode='record';visionState.preferWebcamPair=true;visionState.secondaryDeviceId=null;}
     else{visionCloseSecondary();visionState.captureMode=visionState.preDualMode||'manual';}
     await visionSource();
     if(visionState.dualCamera)try{await visionOpenCamera();}catch(error){$('#vision-camera-error').textContent=error.message;}
@@ -69,6 +89,14 @@ visionOpenCamera=async function(){
   try{
     visionCloseSecondary();
     await visionSingleOpen();
+    // Device labels may only become available after the first permission grant.
+    if(visionState.preferWebcamPair){
+      const devices=(await navigator.mediaDevices.enumerateDevices()).filter(device=>device.kind==='videoinput');
+      const current=visionState.stream.getVideoTracks()[0].getSettings().deviceId;
+      const preferred=devices.find(device=>device.deviceId===current&&visionIsWebcam(device))||devices.find(visionIsWebcam);
+      if(preferred&&preferred.deviceId!==current){$('#vision-camera-device').value=preferred.deviceId;await visionSingleOpen();}
+    }
+    visionState.primaryDeviceId=visionState.stream.getVideoTracks()[0].getSettings().deviceId;
     if(visionState.dualCamera){
       const devices=await visionSecondDeviceOptions();
       if(!devices?.length)throw new Error('Conecta una segunda cámara USB diferente y pulsa Abrir cámaras.');
@@ -80,6 +108,7 @@ visionOpenCamera=async function(){
       $('#vision-camera-video-2').srcObject=stream;await $('#vision-camera-video-2').play();
       $('#vision-camera-badge-2').textContent='Cámara 2 · vista previa';
     }
+    visionState.preferWebcamPair=false;
   }finally{visionState.multiOpening=false;visionMultiButtons(false);}
 };
 visionStartCamera=async function(){
@@ -112,6 +141,7 @@ visionStartCamera=async function(){
     visionState.saving=false;visionState.recording=true;capture.startedAt=performance.now();
     // No awaited operation between either start or stop: both run in one turn.
     for(const side of capture.sides){side.recorder.start(1000);side.started=true;side.startedAt=performance.now();}
+    visionStartRecordingFeedback(capture.startedAt);
     visionState.cameraAsset=capture.sides[0].asset;
     visionMultiButtons(true);$('#vision-stop-camera').disabled=false;
     $('#vision-camera-badge').textContent='REC · Cámara 1';$('#vision-camera-badge-2').textContent='REC · Cámara 2';
@@ -125,7 +155,7 @@ visionStopCamera=async function(){
   const capture=visionState.multiCapture;
   if(!capture?.active)return visionSingleStop();
   if(!visionState.recording)return;
-  visionState.recording=false;visionState.saving=true;capture.stoppedAt=performance.now();visionMultiButtons(true);
+  visionState.recording=false;visionStopRecordingFeedback();visionState.saving=true;capture.stoppedAt=performance.now();visionMultiButtons(true);
   for(const side of capture.sides)if(side.started&&side.recorder.state!=='inactive'){side.recorder.stop();side.stoppedAt=performance.now();}
   const results=await Promise.allSettled(capture.sides.map(async(side,i)=>{
     if(side.started)await side.stopped;
@@ -147,6 +177,7 @@ visionStopCamera=async function(){
 };
 visionCameraFailure=function(error){
   if(visionState.dualCamera||visionState.multiCapture?.active){
+    if(!visionState.recording)visionStopRecordingFeedback();
     if($('#vision-camera-error'))$('#vision-camera-error').textContent=error.message;
     if(!visionState.recording&&!visionState.saving)visionMultiButtons(false);
     toast(error.message);return;

@@ -75,6 +75,7 @@ class ContractTests(unittest.TestCase):
         self.assertTrue(result['assumptions'])
 
     def test_mass_threshold_is_not_rounded(self):
+        self.context['phases']['manual_finishing']['human_load_proxy_kg']['value']=2
         high=compute(self.message,self.context)
         self.context['phases']['manual_finishing']['human_load_proxy_kg']['value']=1.99
         low=compute(self.message,self.context)

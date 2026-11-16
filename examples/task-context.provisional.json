@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1",
   "context_id": "deburring-hospital-bed-v1",
-  "revision": 1,
+  "revision": 2,
   "status": "provisional",
   "task_name": "Retirada de rebaba y acabado de pieza de cama hospitalaria",
   "part": {
@@ -22,9 +22,9 @@
   },
   "operation": {
     "tool": {
-      "value": null,
-      "provenance": "unknown",
-      "note": "No se ha especificado herramienta ni fuerza de corte."
+      "value": "cúter",
+      "provenance": "manual_observation",
+      "note": "Herramienta indicada por el usuario; fuerza de corte no medida."
     },
     "posture": {
       "value": "standing",
@@ -91,9 +91,9 @@
     },
     "manual_finishing": {
       "human_load_proxy_kg": {
-        "value": 2,
+        "value": 0,
         "provenance": "assumed",
-        "note": "Proxy inicial sin medir fuerza de corte o apoyo. No se declara límite superior ni valor conservador validado."
+        "note": "El usuario confirma que la mesa sostiene la pieza durante el acabado. Se excluyen sus 2 kg como peso sostenido por las manos. Proxy 0 para ese peso; la fuerza de corte sigue sin medirse y no se considera esfuerzo nulo ni límite de seguridad."
       }
     },
     "part_place": {

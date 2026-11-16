@@ -1,11 +1,29 @@
 'use strict';
-const visionState = {tab:'upload',jobs:[],assets:[],selected:null,samples:[],status:null,folder:'',root:'examples',
+const visionState = {tab:'camera',jobs:[],assets:[],selected:null,samples:[],status:null,folder:'',root:'examples',
   poll:null,polling:false,stream:null,recording:false,uploading:false,recorder:null,frameTimer:null,
   cameraJob:null,captureMode:'manual',uploadQueue:Promise.resolve(),cameraError:null,selectionKey:null,drawSample:null,angleWindowS:1};
 const visionStatus = {queued:'En cola',running:'Analizando',capturing:'Capturando',finalizing:'Finalizando',completed:'Terminado',failed:'Incidencia',cancelled:'Cancelado'};
 const visionActive = j => !['completed','failed','cancelled'].includes(j.status);
 const visionBytes = n => n==null?'Grabación':n<1024**2?number(n/1024,1)+' KiB':n<1024**3?number(n/1024**2,1)+' MiB':number(n/1024**3,2)+' GiB';
 const visionSeconds = n => number(n||0,2)+' s';
+function visionStartRecordingFeedback(start){
+  clearInterval(visionState.recordingFeedbackTimer);
+  visionState.recordingSince=start;
+  const tick=()=>{
+    if(!visionState.recording){visionStopRecordingFeedback();return;}
+    const box=$('#vision-recording-feedback');if(!box)return;box.hidden=false;
+    const seconds=Math.max(0,Math.floor((performance.now()-visionState.recordingSince)/1000));
+    const parts=[Math.floor(seconds/60)%60,seconds%60].map(value=>String(value).padStart(2,'0'));
+    if(seconds>=3600)parts.unshift(String(Math.floor(seconds/3600)).padStart(2,'0'));
+    $('#vision-recording-time').textContent=parts.join(':');
+    $('#vision-recording-cameras').textContent=visionState.dualCamera?'2 cámaras':'1 cámara';
+  };
+  tick();visionState.recordingFeedbackTimer=setInterval(tick,250);
+}
+function visionStopRecordingFeedback(){
+  clearInterval(visionState.recordingFeedbackTimer);visionState.recordingFeedbackTimer=null;
+  if($('#vision-recording-feedback'))$('#vision-recording-feedback').hidden=true;
+}
 const visionHere = () => state.user && state.view==='vision' && $('#vision-lab');
 const visionVideoUrl = job => '/api/v1/vision/jobs/'+encodeURIComponent(job.job_id)+'/video'+
   (!document.createElement('video').canPlayType('video/mp4;codecs="avc1.42E01E"')&&job.preview_webm_path?'?format=webm':'');
@@ -21,19 +39,23 @@ function visionOptions(){return {sample_fps:Number($('#vision-fps')?.value||5),c
   operator_id:$('#vision-operator')?.value||null,name:$('#vision-name')?.value.trim()||undefined};}
 async function visionPage(){
   if(!admin())return empty('Acceso de administración','Los originales y las pruebas de cámara están reservados a administradores.');
-  [visionState.jobs,visionState.assets,visionState.status,visionState.exports]=await Promise.all([visionRequest('/jobs'),visionRequest('/assets'),visionRequest('/status'),visionRequest('/exports')]);
+  [visionState.jobs,visionState.assets,visionState.status,visionState.exports,visionState.exportCandidates]=await Promise.all([visionRequest('/jobs'),visionRequest('/assets'),visionRequest('/status'),visionRequest('/exports'),visionRequest('/export-candidates')]);
   if(!visionState.jobs.some(j=>j.job_id===visionState.selected))visionState.selected=visionState.jobs[0]?.job_id||null;
   visionState.selectionKey=null;
-  return `<div id='vision-lab'><div class='vision-intro'><div><span class='chip outline'>PRUEBAS CON IMAGEN REAL</span><h2>De la imagen a la postura</h2><p>Importa un clip o abre tu cámara. Explora cada movimiento junto a sus indicadores ergonómicos.</p></div><div id='vision-engine'>${visionEngine()}</div></div>
-  <section class='panel vision-input'><div class='panel-head'><div><h2>Nuevo análisis</h2><p>Los originales se conservan como estudios hasta que los elimines.</p></div><div class='segmented vision-tabs'>${[['upload','Subir vídeos'],['server','Vídeos del servidor'],['camera','Cámara USB']].map(([id,label])=>`<button type='button' data-vision-tab='${id}' class='${visionState.tab===id?'selected':''}'>${label}</button>`).join('')}</div></div>
+  return `<div id='vision-lab'><div id='vision-engine'>${visionEngine()}</div>
+  <section class='panel vision-input'><div class='panel-head'><h2>Nuevo análisis</h2><div class='segmented vision-tabs'>${[['camera','Cámara USB'],['upload','Subir vídeos'],['server','Vídeos del servidor']].map(([id,label])=>`<button type='button' data-vision-tab='${id}' class='${visionState.tab===id?'selected':''}'>${label}</button>`).join('')}</div></div>
   <div class='vision-settings'><label class='field'>Nombre del análisis<input id='vision-name' placeholder='Ej. Recogida y acabado de pieza' maxlength='200'></label><label class='field'>Operario<select id='vision-operator'><option value=''>Laboratorio · sin asignar</option>${state.operators.filter(o=>!o.laboratory).map(o=>`<option value='${esc(o.operator_id)}'>${esc(o.display_name)}</option>`).join('')}</select></label><label class='field'>Fotogramas a analizar<select id='vision-fps'>${[1,2,5,10,15,25].map(n=>`<option value='${n}' ${n===5?'selected':''}>${n} por segundo</option>`).join('')}</select></label><label class='field'>Confianza mínima<select id='vision-confidence'>${[.5,.6,.7,.8,.9].map(n=>`<option value='${n}'>${number(n*100)} %</option>`).join('')}</select></label></div>
-  <div id='vision-source-panel'></div><div id='vision-upload-status' class='vision-transfer' role='status' aria-live='polite'></div></section>
+  <div id='vision-recording-feedback' class='vision-recording-feedback' hidden><span class='vision-recording-dot' aria-hidden='true'></span><strong>Grabando</strong><time id='vision-recording-time'>00:00</time><span id='vision-recording-cameras'></span></div><div id='vision-source-panel'></div><div id='vision-upload-status' class='vision-transfer' role='status' aria-live='polite'></div></section>
   <section id='vision-pending' class='panel' ${visionPendingAssets().length?'':'hidden'}>${visionPending()}</section>
-  <section id='vision-export-panel' class='panel'>${visionExports()}</section>
-  <div class='vision-workspace'><section class='panel vision-history'><div class='panel-head'><div><h2>Análisis guardados</h2><p>Cola y resultados</p></div><button class='icon-btn' id='vision-refresh' aria-label='Actualizar análisis'>${icon('refresh')}</button></div><div id='vision-jobs-list'>${visionJobs()}</div><details class='vision-library'><summary>Vídeos subidos e importados</summary><div id='vision-assets-list'>${visionAssets()}</div></details></section><div id='vision-detail'></div></div></div>`;
+  <div class='vision-workspace'><section class='panel vision-history'><div class='panel-head'><div><h2>Análisis guardados</h2><p>Cola y resultados</p></div><button class='icon-btn' id='vision-refresh' aria-label='Actualizar análisis'>${icon('refresh')}</button></div><div id='vision-jobs-list'>${visionJobs()}</div><details class='vision-library'><summary>Vídeos subidos e importados</summary><div id='vision-assets-list'>${visionAssets()}</div></details></section><div id='vision-detail'></div></div>
+  <section id='vision-export-panel' class='panel'>${visionExports()}</section></div>`;
 }
-function visionEngine(){const w=visionState.status?.worker;return `<div class='vision-engine-mark'><span class='dot ${w?.healthy?'':'offline'}'></span><strong>${w?.healthy?'GPU preparada':w?.status==='loading'?'Cargando modelos':'GPU sin confirmar'}</strong></div><small>${esc(w?.gpu||'RTX 4090 · procesamiento en el servidor')}</small>${w?.error?`<p class='vision-error'>${esc(w.error)}</p>`:''}`;}
-function visionJobs(){return visionState.jobs.length?visionState.jobs.map(j=>`<button class='vision-job ${j.job_id===visionState.selected?'selected':''}' data-vision-job='${esc(j.job_id)}'><span class='vision-job-top'><strong>${esc(j.name)}</strong>${chip(visionStatus[j.status]||j.status,j.status==='failed'?'red':j.status==='completed'?'green':'outline')}</span><span>${date(j.created_at,true)} · ${number(j.processed_frames)} frames</span>${visionActive(j)?`<progress max='1' value='${j.progress||0}' aria-label='Progreso de ${esc(j.name)}'></progress>`:''}</button>`).join(''):empty('Tu primera prueba empieza aquí','Sube un vídeo o selecciona uno de examples.');}
+function visionEngine(){const w=visionState.status?.worker;return `<div class='vision-engine-mark'><span class='dot ${w?.healthy?'':'offline'}'></span><strong>${w?.healthy?'GPU preparada':w?.status==='loading'?'Cargando modelos':'GPU sin confirmar'}</strong></div><small>${esc(w?.gpu||'GPU no identificada')}</small>${w?.error?`<p class='vision-error'>${esc(w.error)}</p>`:''}`;}
+function visionOperatorName(job){
+  if(!job?.operator_id||job.operator_id==='operator-vision-unassigned')return 'Sin asignar';
+  return state.operators.find(operator=>operator.operator_id===job.operator_id)?.display_name||'Operario no disponible';
+}
+function visionJobs(){return visionState.jobs.length?visionState.jobs.map(j=>`<button class='vision-job ${j.job_id===visionState.selected?'selected':''}' data-vision-job='${esc(j.job_id)}'><span class='vision-job-top'><strong>${esc(j.name)}</strong>${chip(visionStatus[j.status]||j.status,j.status==='failed'?'red':j.status==='completed'?'green':'outline')}</span><span class='vision-job-operator'>Operario: ${esc(visionOperatorName(j))}</span><span>${date(j.created_at,true)} · ${number(j.processed_frames)} frames</span>${visionActive(j)?`<progress max='1' value='${j.progress||0}' aria-label='Progreso de ${esc(j.name)}'></progress>`:''}</button>`).join(''):empty('Tu primera prueba empieza aquí','Sube un vídeo o selecciona uno de examples.');}
 function visionAssets(){return visionState.assets.length?visionState.assets.map(a=>`<div class='vision-asset'><div><strong>${esc(a.name)}</strong><small>${a.source==='server'?(a.root==='project'?'Referencia de POSTURE':'Referencia de examples'):'Subida del cliente'} · ${visionBytes(a.size_bytes)} · ${a.status==='ready'?'Guardado':'Subida incompleta'}</small></div><div class='actions'>${a.status==='ready'?`<button class='btn small' data-vision-analyze='${esc(a.asset_id)}'>Analizar</button>`:''}<button class='btn small danger' data-vision-delete-asset='${esc(a.asset_id)}' aria-label='Eliminar vídeo ${esc(a.name)}'>${icon('close')}</button></div></div>`).join(''):`<p class='subtitle'>Todavía no hay vídeos.</p>`;}
 
 function visionPendingAssets(){return visionState.assets.filter(a=>a.status==='ready'&&a.capture?.mode==='manual'&&!a.analysis_requested_at);}
@@ -155,6 +177,7 @@ async function visionStartCamera(){
   };
   recorder.onerror=e=>{visionState.cameraError=e.error||new Error('Error de grabación');visionStopCamera().catch(visionCameraFailure);};
   recorder.start(1000);
+  visionStartRecordingFeedback(visionState.cameraStart);
   $('#vision-start-camera').disabled=true;$('#vision-open-camera').disabled=true;$('#vision-stop-camera').disabled=false;
   $('#vision-camera-device').disabled=true;$('#vision-camera-mode').disabled=true;$('#vision-camera-badge').textContent=mode==='live'?'REC · análisis en curso':mode==='record'?'REC · análisis al terminar':'REC · solo captura, sin análisis';
   if(job){visionState.frameTimer=setInterval(()=>{if(!visionState.frameInFlight)visionState.framePromise=visionCaptureFrame().catch(error=>{if($('#vision-camera-error'))$('#vision-camera-error').textContent=error.message;});},1000/opts.sample_fps);visionState.framePromise=visionCaptureFrame();await visionState.framePromise;}
@@ -179,7 +202,7 @@ async function visionCaptureFrame(){
 async function visionStopCamera(){
   if(!visionState.recording)return;
   visionState.saving=true;
-  visionState.recording=false;clearInterval(visionState.frameTimer);visionState.frameTimer=null;
+  visionState.recording=false;visionStopRecordingFeedback();clearInterval(visionState.frameTimer);visionState.frameTimer=null;
   $('#vision-stop-camera').disabled=true;
   if(visionState.recorder.state!=='inactive')visionState.recorder.stop();
   await visionState.recorderStopped;
@@ -199,6 +222,7 @@ async function visionStopCamera(){
   visionTransfer(visionState.cameraMode==='manual'?'Vídeo guardado sin análisis. Pulsa «Procesar secuencia» cuando quieras calcular la pose y las métricas.':'Vídeo original guardado. Preparando reproducción y resultados.');await visionRefresh();
 }
 function visionCameraFailure(error){
+  visionStopRecordingFeedback();
   visionState.saving=false;
   visionState.recording=false;clearInterval(visionState.frameTimer);
   if(visionState.recorder?.state==='recording')visionState.recorder.stop();
@@ -216,22 +240,63 @@ function visionDetail(job){
   if(!job)return `<section class='panel vision-empty-result'>${empty('Ver el movimiento, entender la postura','Selecciona un análisis o crea una prueba para explorar aquí sus resultados.')}</section>`;
   const id=encodeURIComponent(job.job_id);
   const videoSource=job.preview_path?visionVideoUrl(job):job.mode==='file'?'/api/v1/vision/jobs/'+id+'/source-video':null;
-  return `<section class='panel vision-result'><div class='panel-head'><div><h2>${esc(job.name)}</h2><p id='vision-job-stage'>${esc(job.stage)}</p></div><div class='actions'><button class='btn small' id='vision-reprocess'>Volver a analizar</button><button class='btn small danger' id='vision-delete-job'>Eliminar análisis</button></div></div>
+  visionState.chartPeer=null;
+  visionState.chartPrimaryIndex=visionState.assets.find(asset=>asset.asset_id===job.asset_id)?.capture?.camera_index||1;
+  return `<section class='panel vision-result'><div class='panel-head'><div><h2>${esc(job.name)}</h2><p id='vision-job-operator' class='vision-detail-operator'>Operario: <strong>${esc(visionOperatorName(job))}</strong></p><p id='vision-job-stage'>${esc(job.stage)}</p></div><div class='actions'><button class='btn small' id='vision-reprocess'>Volver a analizar</button><button class='btn small danger' id='vision-delete-job'>Eliminar análisis</button></div></div>
   <div class='vision-job-state'><span id='vision-job-state'>${chip(visionStatus[job.status]||job.status,job.status==='failed'?'red':'outline')}</span><progress id='vision-job-progress' max='1' value='${job.progress||0}' aria-label='Progreso del análisis'></progress><span id='vision-job-count'>${number(job.processed_frames)} frames</span><button class='btn small' id='vision-cancel-job' ${visionActive(job)?'':'hidden'}>Cancelar</button></div>
   <p id='vision-job-error' class='vision-error' role='alert'>${esc(job.error||'')}</p>
   <div class='vision-player'><video id='vision-result-video' ${videoSource?`src='${videoSource}'`:''} controls playsinline preload='metadata' aria-label='Vídeo de estudio sincronizado con la pose' ${videoSource?'':'hidden'}></video><img id='vision-result-frame' alt='Último fotograma analizado' hidden><div id='vision-video-placeholder' ${videoSource?'hidden':''}>${icon('studies')}<p>${job.mode==='live'?'Los fotogramas analizados aparecerán aquí.':'La reproducción estará disponible al terminar el análisis.'}</p></div><canvas id='vision-overlay' aria-label='Esqueleto inferido sobre el fotograma'></canvas></div>
   <div class='vision-player-meta'><span id='vision-frame-position'>Sin fotograma</span><label><input id='vision-show-pose' type='checkbox' checked> Mostrar esqueleto</label><label>Suavizado de ángulos<select id='vision-angle-window' title='Media móvil de las muestras disponibles. Solo cambia la visualización; las métricas originales se conservan.'>${[[0,'Sin suavizado'],[.5,'Media móvil · 0,5 s'],[1,'Media móvil · 1 s'],[2,'Media móvil · 2 s']].map(([seconds,label])=>`<option value='${seconds}' ${visionState.angleWindowS===seconds?'selected':''}>${label}</option>`).join('')}</select></label></div>
-  <div id='vision-frame-metrics'>${visionMetricsLayout()}</div><div id='vision-summary' class='vision-summary'></div>
-  <div class='vision-chart'><div class='legend'><span><i></i>RULA</span><span><i class='orange'></i>REBA</span></div><div id='vision-score-chart'></div></div>
+  <div id='vision-frame-metrics'>${visionMetricsLayout()}</div>
+  <div class='vision-chart'><div id='vision-chart-legend' class='vision-chart-legend' aria-label='Mostrar u ocultar curvas'>${visionChartLegend()}</div><div id='vision-score-chart'></div></div><div id='vision-summary' class='vision-summary'></div>
   <div class='actions vision-exports'><a class='btn small' href='/api/v1/vision/jobs/${id}/export.csv'>${icon('download')} Métricas CSV</a><a class='btn small' href='/api/v1/vision/jobs/${id}/export.json'>Pose y métricas JSON</a><a class='btn small' href='/api/v1/vision/jobs/${id}/original'>Vídeo original</a><a class='btn small' href='#session/${esc(job.session_id)}'>Ver sesión</a></div>
   <details class='accordion'><summary>Modelo, contexto y límites de la evaluación</summary><p class='subtitle'>RTMW-x · 133 puntos · CUDA. Se adapta al contrato de 33 puntos; las articulaciones no observadas quedan ausentes. Selección de la persona de mayor tamaño entre detecciones con confianza suficiente. Normalización a 1920×1080 sin deformar la imagen. El tiempo corresponde a la posición dentro del vídeo; no acredita la fecha real de grabación.</p><p class='subtitle'>Pose proyectada 2D. La profundidad y SMPL todavía no están activados. Las puntuaciones son preliminares y dependen de los supuestos de carga, agarre y apoyos.</p><div id='vision-assumptions'></div><pre class='code-box'>${esc(JSON.stringify({options:job.options,context:job.context,model_manifest:job.model_manifest||null},null,2))}</pre></details></section>`;
 }
+function visionChartSeries(){
+  const sources=[{camera:visionState.chartPrimaryIndex||1,samples:visionState.samples}];
+  if(visionState.chartPeer?.selectedJobId===visionState.selected)sources.push(visionState.chartPeer);
+  const colors={1:{rula:'#1d6c5c',reba:'#c78832'},2:{rula:'#169da7',reba:'#d75b35'}};
+  return sources.sort((a,b)=>a.camera-b.camera).flatMap(source=>['rula','reba'].map(metric=>({
+    id:source.camera+'-'+metric,camera:source.camera,metric,samples:source.samples,
+    color:(colors[source.camera]||colors[1])[metric],label:'Vídeo '+source.camera+' · '+metric.toUpperCase()})));
+}
+function visionChartLegend(){
+  return visionChartSeries().map(series=>`<button type='button' class='vision-curve-toggle' data-vision-curve='${series.id}' aria-pressed='${visionState.hiddenCurves?.[series.id]?'false':'true'}' style='--curve-color:${series.color}'><i aria-hidden='true'></i>${series.label}</button>`).join('');
+}
+function visionRenderChart(){
+  if($('#vision-chart-legend'))$('#vision-chart-legend').innerHTML=visionChartLegend();
+  if($('#vision-score-chart'))$('#vision-score-chart').innerHTML=visionPlot();
+  const video=$('#vision-result-video');
+  visionUpdatePlayhead(video?.requestVideoFrameCallback?video.posturePresentedTime:video?.currentTime);
+}
+function visionUpdatePlayhead(time){
+  const cursor=$('#vision-playhead');if(!cursor)return;
+  if(!Number.isFinite(time)){cursor.setAttribute('visibility','hidden');return;}
+  const end=Number(cursor.closest('svg').dataset.durationS);
+  if(!Number.isFinite(end)||end<=0)return;
+  const x=(35+Math.min(1,Math.max(0,time/end))*645).toFixed(2);
+  cursor.setAttribute('x1',x);cursor.setAttribute('x2',x);
+  cursor.setAttribute('data-time-s',time.toFixed(6));cursor.setAttribute('visibility','visible');
+}
 function visionPlot(){
-  const samples=visionState.samples;if(!samples.length)return `<p class='subtitle'>Esperando resultados de detección.</p>`;
-  const end=Math.max(.1,samples.at(-1).offset_s),x=t=>35+t/end*645,y=v=>145-v/15*125;
-  const step=Math.max(1,Math.ceil(samples.length/1200));
-  function line(key,color){let segments=[],part=[];samples.filter((_,i)=>i%step===0||i===samples.length-1).forEach(s=>{const v=s.metrics[key];if(v==null){if(part.length)segments.push(part.join(' '));part=[];}else part.push(`${x(s.offset_s).toFixed(2)},${y(v).toFixed(2)}`);});if(part.length)segments.push(part.join(' '));return segments.map(p=>`<polyline points='${p}' fill='none' stroke='${color}' stroke-width='2'/>`).join('');}
-  return `<svg class='chart' viewBox='0 0 700 175' role='img' aria-label='RULA y REBA a lo largo del vídeo'>${[0,5,10,15].map(v=>`<path d='M35 ${y(v)}H680' stroke='#e1e7e2'/><text x='8' y='${y(v)+4}'>${v}</text>`).join('')}${line('rula','#1d6c5c')}${line('reba','#d7a05a')}<text x='35' y='168'>0 s</text><text x='625' y='168'>${number(end,1)} s</text></svg>`;
+  const series=visionChartSeries();
+  if(!series.some(curve=>curve.samples.length))return `<p class='subtitle'>Esperando resultados de detección.</p>`;
+  const end=Math.max(.1,...series.map(curve=>curve.samples.at(-1)?.offset_s||0)),x=t=>35+t/end*645,y=v=>145-v/15*125;
+  function line(curve){
+    if(visionState.hiddenCurves?.[curve.id])return '';
+    const samples=curve.samples,step=Math.max(1,Math.ceil(samples.length/1200));let segments=[],part=[],previous=null;
+    function flush(){if(part.length)segments.push(part.join(' '));part=[];}
+    samples.forEach((sample,i)=>{
+      const value=sample.metrics?.[curve.metric];
+      if(!Number.isFinite(value)){flush();previous=null;return;}
+      if(previous!==null&&sample.offset_s-previous>2)flush();
+      if(i%step===0||!part.length||i===samples.length-1||!Number.isFinite(samples[i+1]?.metrics?.[curve.metric]))part.push(`${x(sample.offset_s).toFixed(2)},${y(value).toFixed(2)}`);
+      previous=sample.offset_s;
+    });flush();
+    return segments.map(points=>`<polyline data-curve='${curve.id}' points='${points}' fill='none' stroke='${curve.color}' stroke-width='2'/>`).join('');
+  }
+  const enabled=series.some(curve=>!visionState.hiddenCurves?.[curve.id]);
+  return `<svg class='chart' data-duration-s='${end}' viewBox='0 0 700 175' role='img' aria-label='RULA y REBA por vídeo a lo largo del tiempo'>${[0,5,10,15].map(v=>`<path d='M35 ${y(v)}H680' stroke='#e1e7e2'/><text x='8' y='${y(v)+4}'>${v}</text>`).join('')}${series.map(line).join('')}${enabled?'':"<text x='220' y='80'>Activa una curva en la leyenda</text>"}<line id='vision-playhead' x1='35' x2='35' y1='17' y2='145' stroke='#52645a' stroke-width='1' opacity='.65' vector-effect='non-scaling-stroke' pointer-events='none' visibility='hidden' aria-hidden='true'/><text x='35' y='168'>0 s</text><text x='625' y='168'>${number(end,1)} s</text></svg>`;
 }
 function visionDraw(row,canvas=$('#vision-overlay'),confidence){
   if(!canvas)return;
@@ -246,7 +311,13 @@ function visionDraw(row,canvas=$('#vision-overlay'),confidence){
 }
 const visionAngleFields=[['Tronco','trunk'],['Cuello','neck'],['Codo izquierdo','left_elbow_flexion'],['Codo derecho','right_elbow_flexion']];
 function visionMetricsLayout(){
-  return `<div class='vision-risk-cards'>${metricCards(null)}</div><div class='vision-angle-grid'>${visionAngleFields.map(([name,key])=>`<div><span>${name}</span><strong data-vision-angle='${key}'>—</strong></div>`).join('')}</div>`;
+  return `<div class='vision-risk-cards'>${visionCompactScores(null)}</div><div class='vision-angle-grid'>${visionAngleFields.map(([name,key])=>`<div><span>${name}</span><strong data-vision-angle='${key}'>—</strong></div>`).join('')}</div>`;
+}
+function visionCompactScores(metrics){
+  return `<div class='risk-scores'>${[['RULA','rula',7],['REBA','reba',15]].map(([name,key,max])=>{
+    const value=metrics?.[key];
+    return `<div class='risk-score vision-risk-${key}' data-score-metric='${key}'><span class='vision-score-name'>${name}</span><div class='vision-score-value'><strong>${value??'—'}</strong><span> / ${max}</span></div><div class='mini-track' aria-label='${name}: ${value??'sin dato'} de ${max}'>${Array.from({length:max},(_,i)=>`<i class='${i<(value||0)?'on':''}'></i>`).join('')}</div></div>`;
+  }).join('')}</div>`;
 }
 function visionSmoothedAngles(samples,row,windowS=1){
   const angles=Object.fromEntries(visionAngleFields.map(([,key])=>[key,null]));
@@ -271,7 +342,7 @@ function visionShowSample(row){
   visionState.drawSample=row;visionDraw(row);
   const holder=$('#vision-frame-metrics');if(!holder)return;
   if(!holder.querySelector('.vision-angle-grid'))holder.innerHTML=visionMetricsLayout();
-  holder.querySelector('.vision-risk-cards').innerHTML=metricCards(row?{metrics:row.metrics}:null);
+  holder.querySelector('.vision-risk-cards').innerHTML=visionCompactScores(row?.metrics);
   const angles=visionSmoothedAngles(visionState.samples,row,visionState.angleWindowS);
   for(const [,key] of visionAngleFields)holder.querySelector(`[data-vision-angle='${key}']`).textContent=angles[key]==null?'—':number(angles[key],1)+'°';
   if($('#vision-frame-position'))$('#vision-frame-position').textContent=row?`${visionSeconds(row.offset_s)} · ${row.persons_detected} persona${row.persons_detected===1?'':'s'} · confianza ${number(row.selection_confidence*100)} %`:'Sin detección sincronizada';
@@ -283,6 +354,7 @@ function visionVideoTime(frameTime){
   // currentTime can lead the frame actually sent to the compositor. Once frame
   // callbacks are available, both playback and paused polling use that clock.
   const time=video.requestVideoFrameCallback?video.posturePresentedTime:video.currentTime;
+  visionUpdatePlayhead(time);
   if(!Number.isFinite(time)||video.seeking){visionShowSample(null);return;}
   const samples=visionState.samples;let low=0,high=samples.length;
   while(low<high){const middle=(low+high)>>1;if(samples[middle].offset_s<=time)low=middle+1;else high=middle;}
@@ -293,6 +365,10 @@ function visionVideoTime(frameTime){
 }
 function visionBindDetail(job){
   if(!job)return;
+  $('#vision-chart-legend').onclick=event=>{
+    const button=event.target.closest('[data-vision-curve]');if(!button)return;
+    const hidden=visionState.hiddenCurves||(visionState.hiddenCurves={});hidden[button.dataset.visionCurve]=!hidden[button.dataset.visionCurve];visionRenderChart();
+  };
   const video=$('#vision-result-video');
   video.ontimeupdate=()=>{if(!video.requestVideoFrameCallback)visionVideoTime();};
   video.onseeked=()=>visionVideoTime();
@@ -308,17 +384,17 @@ function visionBindDetail(job){
   };
   $('#vision-result-frame').onload=()=>visionDraw(visionState.drawSample);
   $('#vision-cancel-job').onclick=async()=>{if(visionState.recording&&visionState.cameraJob?.job_id===job.job_id){toast('Para terminar la captura pulsa Detener y guardar.');return;}try{await visionRequest('/jobs/'+job.job_id+'/cancel',{method:'POST'});await visionRefresh();}catch(e){toast(e.message);}};
-  $('#vision-reprocess').onclick=async()=>{try{await visionNewJob({asset_id:job.asset_id},{...visionOptions(),name:job.name+' · revisión'});await visionRefresh();}catch(e){toast(e.message);}};
+  $('#vision-reprocess').onclick=async()=>{try{await visionNewJob({asset_id:job.asset_id},{...visionOptions(),table_height_cm:job.table_height_cm??null,operator_id:job.operator_id,name:job.name+' · revisión'});await visionRefresh();}catch(e){toast(e.message);}};
   $('#vision-delete-job').onclick=async()=>{if(visionState.recording&&visionState.cameraJob?.job_id===job.job_id){toast('Detén y guarda la captura antes de eliminarla.');return;}if(!confirm('¿Eliminar este análisis, su sesión y sus fotogramas? El vídeo original se conserva en la biblioteca.'))return;try{await visionRequest('/jobs/'+job.job_id,{method:'DELETE'});visionState.selected=null;visionState.selectionKey=null;await visionRefresh();}catch(e){toast(e.message);}};
 }
 async function visionRefresh(){
   if(!visionHere()||visionState.polling)return;
   visionState.polling=true;
   try{
-    [visionState.jobs,visionState.assets,visionState.exports]=await Promise.all([visionRequest('/jobs'),visionRequest('/assets'),visionRequest('/exports')]);
+    [visionState.jobs,visionState.assets,visionState.exports,visionState.exportCandidates]=await Promise.all([visionRequest('/jobs'),visionRequest('/assets'),visionRequest('/exports'),visionRequest('/export-candidates')]);
     if(!visionState.jobs.some(j=>j.job_id===visionState.selected)){visionState.selected=visionState.jobs[0]?.job_id||null;visionState.selectionKey=null;}
     if(!visionHere())return;
-    $('#vision-export-panel').innerHTML=visionExports();visionBindExports();
+    visionUpdateExports();
     $('#vision-jobs-list').innerHTML=visionJobs();$('#vision-assets-list').innerHTML=visionAssets();
     $('#vision-pending').hidden=!visionPendingAssets().length;$('#vision-pending').innerHTML=visionPending();visionBindLists();
     let job=visionState.jobs.find(j=>j.job_id===visionState.selected);
@@ -331,11 +407,12 @@ async function visionRefresh(){
     const index=visionState.jobs.findIndex(j=>j.job_id===id);visionState.jobs[index]=job;
     visionState.samples.push(...response.samples);
     $('#vision-job-stage').textContent=job.stage;$('#vision-job-count').textContent=number(job.processed_frames)+' frames';
+    $('#vision-job-operator strong').textContent=visionOperatorName(job);
     $('#vision-job-progress').value=job.progress||0;$('#vision-job-error').textContent=job.error||'';
     $('#vision-job-state').innerHTML=chip(visionStatus[job.status]||job.status,job.status==='failed'?'red':'outline');
     $('#vision-cancel-job').hidden=!visionActive(job);
     $('#vision-summary').innerHTML=`<div><strong>${number(job.processed_frames)}</strong><span>Frames analizados</span></div><div><strong>${job.processed_frames?number(job.evaluable_frames/job.processed_frames*100):'—'} %</strong><span>Frames evaluables</span></div><div><strong>${job.summary?.rula_max??'—'} / ${job.summary?.reba_max??'—'}</strong><span>Máximos RULA / REBA</span></div>`;
-    if(response.samples.length||!$('#vision-score-chart').innerHTML)$('#vision-score-chart').innerHTML=visionPlot();
+    if(response.samples.length||!$('#vision-score-chart').innerHTML)visionRenderChart();
     const video=$('#vision-result-video'),frame=$('#vision-result-frame');
     if(job.preview_path||job.mode==='file'){if(video.hidden){video.src=job.preview_path?visionVideoUrl(job):'/api/v1/vision/jobs/'+encodeURIComponent(job.job_id)+'/source-video';video.hidden=false;}frame.hidden=true;$('#vision-video-placeholder').hidden=true;
       if(video.paused)visionVideoTime();
@@ -379,18 +456,58 @@ function visionCanNavigate(view){
   return true;
 }
 function visionExports(){
-  const exports=visionState.exports||[],active=exports.some(e=>['queued','running'].includes(e.status));
-  return `<div class='panel-head'><div><h2>Exportación de ejecuciones</h2><p>Un ZIP con original, vídeo con esqueleto, métricas CSV y pose completa JSON por análisis terminado.</p></div><button class='btn primary' id='vision-export-all' ${active||visionState.exportBusy?'disabled':''}>${icon('download')} Exportar todas</button></div>
-  <div class='vision-export-list'>${exports.slice(0,5).map(e=>`<div class='vision-export-item'><div><strong>${e.status==='completed'?'ZIP preparado':e.status==='failed'?'Exportación con incidencia':esc(e.stage)}</strong><small>${date(e.created_at,true)} · ${e.completed_runs}/${e.total_runs} ejecuciones${e.size_bytes?' · '+visionBytes(e.size_bytes):''}${e.skipped_runs?.length?' · '+e.skipped_runs.length+' capturas activas excluidas':''}</small>${['queued','running'].includes(e.status)?`<progress max='1' value='${e.progress||0}' aria-label='Progreso de exportación'></progress>`:''}${e.error?`<p class='vision-error'>${esc(e.error)}</p>`:''}${e.warnings?.length?`<p class='vision-error'>${e.warnings.length} avisos. Consulta manifest.json dentro del ZIP para ver los archivos no disponibles.</p>`:''}</div><div class='actions'>${e.status==='completed'?`<a class='btn small primary' data-export-download='${esc(e.export_id)}' href='/api/v1/vision/exports/${encodeURIComponent(e.export_id)}/download'>Descargar ZIP</a>`:''}<button class='btn small' data-export-delete='${esc(e.export_id)}'>${['queued','running'].includes(e.status)?'Cancelar':'Eliminar ZIP'}</button></div></div>`).join('')}</div>`;
+  visionState.exportSelection??=new Set();
+  return `<div class='panel-head'><div><h2>Exportación de ejecuciones</h2><p>Original, vídeo con esqueleto, métricas CSV y pose JSON de las ejecuciones que elijas.</p></div><div class='actions'><button class='btn primary' id='vision-export-selected'>${icon('download')} Exportar seleccionadas (<span id='vision-export-selected-count'>${visionState.exportSelection.size}</span>)</button><button class='btn' id='vision-export-all'>Exportar todas</button></div></div>
+  <details class='vision-export-picker' ${visionState.exportExpanded===false?'':'open'}><summary>Seleccionar ejecuciones</summary><div class='vision-export-picker-tools'><label class='field'>Buscar ejecución u operario<input type='search' id='vision-export-search' value='${esc(visionState.exportQuery||'')}' placeholder='Nombre, operario, altura o cámara'></label><div class='actions'><button class='btn small' id='vision-export-select-visible'>Seleccionar visibles</button><button class='btn small' id='vision-export-clear'>Limpiar selección</button></div><span id='vision-export-selection-status' role='status'></span></div><div id='vision-export-choices' class='vision-export-choices'></div></details>
+  <div id='vision-export-history' class='vision-export-list'></div>`;
+}
+function visionExportMatches(){
+  const query=(visionState.exportQuery||'').trim().toLocaleLowerCase('es');
+  return (visionState.exportCandidates?.jobs||[]).filter(job=>!query||`${job.name} ${visionOperatorName(job)} ${job.table_height_cm??''} Cámara ${job.camera_index} ${job.created_at} ${job.job_id}`.toLocaleLowerCase('es').includes(query));
+}
+function visionExportHistory(){
+  return (visionState.exports||[]).slice(0,5).map(e=>`<div class='vision-export-item'><div><strong>${e.status==='completed'?'ZIP preparado':e.status==='failed'?'Exportación con incidencia':esc(e.stage)}</strong><small>${date(e.created_at,true)} · ${e.scope==='selection'?'Selección':'Todas'} · ${e.completed_runs}/${e.total_runs} ejecuciones${e.size_bytes?' · '+visionBytes(e.size_bytes):''}${e.skipped_runs?.length?' · '+e.skipped_runs.length+' capturas activas excluidas':''}</small>${['queued','running'].includes(e.status)?`<progress max='1' value='${e.progress||0}' aria-label='Progreso de exportación'></progress>`:''}${e.error?`<p class='vision-error'>${esc(e.error)}</p>`:''}${e.warnings?.length?`<p class='vision-error'>${e.warnings.length} avisos. Consulta manifest.json dentro del ZIP para ver los archivos no disponibles.</p>`:''}</div><div class='actions'>${e.status==='completed'?`<a class='btn small primary' data-export-download='${esc(e.export_id)}' href='/api/v1/vision/exports/${encodeURIComponent(e.export_id)}/download'>Descargar ZIP</a>`:''}<button class='btn small' data-export-delete='${esc(e.export_id)}'>${['queued','running'].includes(e.status)?'Cancelar':'Eliminar ZIP'}</button></div></div>`).join('');
+}
+function visionUpdateExports(){
+  if(!$('#vision-export-panel'))return;
+  const selected=visionState.exportSelection??=new Set(),jobs=visionState.exportCandidates?.jobs||[];
+  const eligible=new Set(jobs.map(job=>job.job_id));for(const id of selected)if(!eligible.has(id))selected.delete(id);
+  const matches=visionExportMatches(),choices=$('#vision-export-choices');
+  const html=matches.length?matches.map(job=>`<label class='vision-export-choice'><input type='checkbox' data-export-select='${esc(job.job_id)}' ${selected.has(job.job_id)?'checked':''}><span><strong>${esc(job.name)}</strong><small>${esc(visionOperatorName(job))} · ${job.table_height_cm==null?'Altura sin definir':number(job.table_height_cm)+' cm'} · Cámara ${job.camera_index} · ${date(job.created_at,true)} · ${esc(visionStatus[job.status]||job.status)}</small></span></label>`).join(''):`<p class='subtitle'>${jobs.length?'No hay coincidencias.':'No hay ejecuciones terminadas para exportar.'}</p>`;
+  if(choices.postureHTML!==html){choices.innerHTML=html;choices.postureHTML=html;}
+  const active=(visionState.exports||[]).some(e=>['queued','running'].includes(e.status));
+  $('#vision-export-selected').disabled=active||visionState.exportBusy||!selected.size;
+  $('#vision-export-all').disabled=active||visionState.exportBusy||!jobs.length;
+  $('#vision-export-selected-count').textContent=selected.size;
+  $('#vision-export-select-visible').disabled=!matches.length;$('#vision-export-clear').disabled=!selected.size;
+  $('#vision-export-selection-status').textContent=`${selected.size} seleccionadas · ${matches.length} de ${jobs.length} disponibles${visionState.exportCandidates?.active_runs?' · '+visionState.exportCandidates.active_runs+' en curso excluidas':''}. Cada cámara se elige por separado.`;
+  const history=$('#vision-export-history'),historyHTML=visionExportHistory();
+  if(history.postureHTML!==historyHTML){history.innerHTML=historyHTML;history.postureHTML=historyHTML;}
+  visionBindExportDeletes();
+}
+async function visionQueueExport(selectedOnly){
+  const ids=selectedOnly?[...visionState.exportSelection]:null;if(selectedOnly&&!ids.length)return;
+  visionState.exportBusy=true;visionUpdateExports();
+  try{await visionRequest('/exports',{method:'POST',...(selectedOnly?{body:JSON.stringify({job_ids:ids})}:{})});await visionRefresh();toast(selectedOnly?`Preparando ZIP con ${ids.length} ejecuciones seleccionadas.`:'Exportación completa en segundo plano.');}
+  catch(error){toast(error.message);}
+  finally{visionState.exportBusy=false;if(visionHere())visionUpdateExports();}
 }
 function visionBindExports(){
-  const button=$('#vision-export-all');
-  if(button)button.onclick=async()=>{
-    visionState.exportBusy=true;button.disabled=true;
-    try{await visionRequest('/exports',{method:'POST'});await visionRefresh();toast('Exportación en segundo plano. Puedes seguir usando el dashboard.');}
-    catch(error){toast(error.message);}
-    finally{visionState.exportBusy=false;if(visionHere()){ $('#vision-export-panel').innerHTML=visionExports();visionBindExports();}}
+  if(!$('#vision-export-all'))return;
+  $('#vision-export-all').onclick=()=>visionQueueExport(false);
+  $('#vision-export-selected').onclick=()=>visionQueueExport(true);
+  $('#vision-export-search').oninput=event=>{visionState.exportQuery=event.target.value;visionUpdateExports();};
+  $('#vision-export-choices').onchange=event=>{
+    const box=event.target.closest('[data-export-select]');if(!box)return;
+    if(box.checked)visionState.exportSelection.add(box.dataset.exportSelect);else visionState.exportSelection.delete(box.dataset.exportSelect);
+    visionUpdateExports();
   };
+  $('#vision-export-select-visible').onclick=()=>{for(const job of visionExportMatches())visionState.exportSelection.add(job.job_id);visionUpdateExports();};
+  $('#vision-export-clear').onclick=()=>{visionState.exportSelection.clear();visionUpdateExports();};
+  $('.vision-export-picker').ontoggle=event=>{visionState.exportExpanded=event.target.open;};
+  visionUpdateExports();
+}
+function visionBindExportDeletes(){
   document.querySelectorAll('[data-export-delete]').forEach(button=>button.onclick=async()=>{
     if(!confirm('¿Cancelar o eliminar este ZIP? Los vídeos y análisis originales se conservan.'))return;
     try{await visionRequest('/exports/'+encodeURIComponent(button.dataset.exportDelete),{method:'DELETE'});await visionRefresh();}

@@ -196,6 +196,83 @@ Chromium decoded both actual camera videos, played them together (approximately
 and rendered a 390 px layout without overflow or JavaScript errors. Private
 evidence: `.runtime/paired-review-qa/`.
 
+## Compact laboratory readout and camera curves — 12 November 2026
+
+Added a red capture indicator with a monotonic elapsed clock for single/paired
+recording. The current-score readout places compact RULA/REBA cards and blocks
+beside a 2×2 angle grid. The chart follows immediately, with independent toggles
+for each camera's RULA and REBA; physical camera labels remain stable on switching
+the selected video.
+
+Chromium checks exercised all four curve toggles, including hiding all curves,
+correct camera/sample mapping after changing selection, a progressing recording
+clock and unchanged source metrics. Desktop card order and the 2×2 angle grid
+were checked, along with a 390 px layout without overflow or JavaScript errors.
+These display checks do not imply hardware capture synchronisation.
+
+Private report/screenshots: `.runtime/lab-design-qa/`. Stored metrics and export
+contents are unchanged by these display controls.
+
+## Scoring-context audit and current-frame marker — 12 November 2026
+
+An audit recomputed 316 evaluable samples with their original frozen context and
+found no RULA/REBA mismatches. The high RULA baseline was sensitive to the assumed
+2 kg repeated finishing load: one stored sample changed from RULA 6 / REBA 2 to
+RULA 3 / REBA 2 when only that proxy was removed in memory. This sensitivity
+calculation did not rewrite samples.
+
+After the user confirmed table support, the running context advanced from
+revision 1 to 2: finishing excludes the supported part's weight, while transfer
+retains 2 kg. Cutter force remains unmeasured and scores remain preliminary.
+Existing jobs/results keep their frozen context. The public example uses the
+updated revision. Reanalysis retains the original operator association.
+
+All 47 unit tests passed with the updated finishing assumption. Browser checks
+verified that the subtle SVG marker follows actual presented frame timestamps
+during playback, pause, forward/backward seeks, hidden curves and missing pose,
+without horizontal overflow at 390 px or JavaScript errors. The marker updates
+attributes rather than redrawing curves for every video frame.
+
+Private evidence: `.runtime/metric-audit/` and `.runtime/playhead-qa/`.
+
 ## Scope
 
 Software checks do not establish clinical/occupational validity, calibration, physical camera operation, target-device performance or scientific superiority of an estimator. Synthetic fixtures are labelled accordingly. New deployments must validate their own hardware, task context and field measurements.
+## Laboratory height annotations and grouped analysis — 2026-11-12
+
+- All 53 Python unit tests passed, including known unit-typo inference, explicit
+  unknown/manual heights, invalid numeric inputs, missing score denominators,
+  ordinal distributions, paired-capture counts, and separation of incompatible
+  contexts, algorithms and sampling settings.
+- The deployed migration corrected 15 laboratory titles and annotated 55 retained
+  analysis jobs: 19 at 75 cm, 20 at 100 cm, 12 at 120 cm and 4 unknown. Repeating
+  the migration added no audit records. Raw videos and score documents were not
+  rewritten.
+- The default comparison selected 54 latest completed video analyses across 36
+  captures, with 28,342 sampled frames and 10 compatible groups. One historical
+  reanalysis was excluded by the latest-per-video default. The local query took
+  approximately 0.28 seconds; this is a local observation, not a performance SLA.
+- Chromium exercised combined height/operator grouping, operator/height/camera/
+  context filters, unknown-height groups, empty results, reset, CSV download,
+  capture height options, invalid-height API rejection, and navigation back to
+  both-camera playback. Desktop (1440 px) and mobile (390 px) had no document
+  overflow or JavaScript errors. Evidence is private under
+  `.runtime/lab-analysis-qa/` and is not distributed with the public module.
+
+## Selected laboratory ZIP exports — 2026-11-12
+
+- All 59 Python unit tests passed. Selection checks cover exact ID snapshots,
+  deduplication, empty/invalid lists, unavailable or unfinished runs, active
+  archive conflicts, legacy export-all behavior, deleted associations and
+  administrator access.
+- Chromium tested search, bulk selection of search matches, clearing, selection
+  and input focus across polling, navigation away/back, collapsed picker state,
+  empty selection rejection, the unchanged export-all request format, and
+  390 px mobile layout without document overflow or JavaScript errors.
+- A real selected export used two existing analyses out of 81 candidates.
+  Its ZIP contained exactly two run folders, two originals, two rendered
+  skeleton videos, two metric CSV series, two complete pose/result JSON files,
+  `manifest.json` and `runs.csv`, with no export warnings. The same active
+  selection was reused; a different active selection returned HTTP 409.
+- Only the QA archive was deleted after verification; source recordings and
+  analyses were preserved. Private evidence is in `.runtime/selected-export-qa/`.
